@@ -1,4 +1,4 @@
-# LightLogger
+# LiteLogger
 
 A fast, lightweight, and customizable logging utility for Dart & Flutter — with colored output, emoji icons, log filtering, and powerful formatting.
 
@@ -37,7 +37,7 @@ logger.error('Unable to access database');
 ## Advanced Configuration
 
 ```dart
-final logger = LightLogger(
+final logger = LiteLogger(
   enabled: true,
   minLevel: LogLevel.debug,
   timestamp: (dt) => '[${dt.toIso8601String()}]',
@@ -63,7 +63,7 @@ final logger = LightLogger(
 ## Log Filtering Example
 
 ```dart
-final logger = LightLogger(minLevel: LogLevel.warning);
+const logger = LiteLogger(minLevel: LogLevel.warning);
 
 logger.log('This is info', LogLevel.info);     // ❌ Not logged
 logger.log('This is warning', LogLevel.warning); // ✅ Logged
@@ -75,7 +75,7 @@ logger.log('This is error', LogLevel.error);     // ✅ Logged
 ## Using Callback for Custom Output
 
 ```dart
-final logger = LightLogger(
+const logger = LiteLogger(
   callback: (raw, colored, level) {
     sendToServer({'level': level.text, 'message': raw});
   },
@@ -93,8 +93,3 @@ Licensed under the **MIT License** — free for personal and commercial use.
 ## Contributing
 
 Contributions, bug reports, and ideas are always welcome!
-Let’s make **LightLogger** the go-to logger for Dart developers.
-
----
-
-### Start logging with purpose. Start with **LightLogger**

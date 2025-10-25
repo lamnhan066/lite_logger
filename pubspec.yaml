@@ -1,5 +1,5 @@
 name: lite_logger
-description: A starting point for Dart libraries or applications.
+description: A fast, lightweight, and customizable logging utility for Dart & Flutter — with colored output, emoji icons, log filtering, and powerful formatting.
 version: 0.0.1
 repository: https://github.com/lamnhan066/lite_logger
 
@@ -8,4 +8,4 @@ environment:
 
 dev_dependencies:
   test: ^1.25.6
-  very_good_analysis: ^10.0.0
+  very_good_analysis: ^8.0.0
