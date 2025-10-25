@@ -6,7 +6,8 @@ import 'package:lite_logger/src/models/log_level.dart';
 import 'package:test/test.dart';
 
 // Utility to capture print output within a test zone.
-// This function creates and returns a new Zone where print statements are intercepted.
+// This function creates and returns a new Zone
+// where print statements are intercepted.
 Zone createTestZone(void Function(String s) fn) {
   return Zone.current.fork(
     specification: ZoneSpecification(
@@ -57,13 +58,10 @@ void main() {
       testZone = createTestZone((s) => capturedPrints.add(s));
     });
 
-    // Each test will run in its own zone, so no tearDown is needed to reset print behavior.
-
     test(
       'should log messages when enabled and minLevel is met',
       () => testZone.run(() {
-        final logger = LiteLogger(minLevel: LogLevel.info);
-        logger.info('Test message');
+        const LiteLogger().info('Test message');
         expect(capturedPrints, isNotEmpty);
         expect(capturedPrints.first, contains('Test message'));
       }),
@@ -72,8 +70,7 @@ void main() {
     test(
       'should not log messages when disabled',
       () => testZone.run(() {
-        final logger = LiteLogger(enabled: false);
-        logger.info('Test message');
+        const LiteLogger(enabled: false).info('Test message');
         expect(capturedPrints, isEmpty);
       }),
     );
@@ -81,8 +78,7 @@ void main() {
     test(
       'should not log messages when minLevel is not met',
       () => testZone.run(() {
-        final logger = LiteLogger(minLevel: LogLevel.warning);
-        logger.info('Test message');
+        const LiteLogger(minLevel: LogLevel.warning).info('Test message');
         expect(capturedPrints, isEmpty);
       }),
     );
@@ -90,8 +86,7 @@ void main() {
     test(
       'should log messages when minLevel is met (equal level)',
       () => testZone.run(() {
-        final logger = LiteLogger(minLevel: LogLevel.warning);
-        logger.warning('Warning message');
+        const LiteLogger(minLevel: LogLevel.warning).warning('Warning message');
         expect(capturedPrints, isNotEmpty);
         expect(capturedPrints.first, contains('Warning message'));
       }),
@@ -100,8 +95,7 @@ void main() {
     test(
       'should log messages with correct color, icon, level, and timestamp',
       () => testZone.run(() {
-        final logger = LiteLogger(minLevel: LogLevel.info);
-        logger.info('Info message');
+        const LiteLogger().info('Info message');
         final logOutput = capturedPrints.first;
 
         expect(logOutput, contains('\x1B[34m')); // Blue color for info
@@ -117,11 +111,9 @@ void main() {
     test(
       'should use custom format string',
       () => testZone.run(() {
-        final logger = LiteLogger(
+        const LiteLogger(
           format: '[@{level}] @{message} @{icon}',
-          minLevel: LogLevel.info,
-        );
-        logger.info('Custom format');
+        ).info('Custom format');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('[INFO] Custom format 💡'));
       }),
@@ -130,11 +122,7 @@ void main() {
     test(
       'should use custom timestamp function',
       () => testZone.run(() {
-        final logger = LiteLogger(
-          timestamp: (date) => 'TIME',
-          minLevel: LogLevel.info,
-        );
-        logger.info('Custom timestamp');
+        LiteLogger(timestamp: (date) => 'TIME').info('Custom timestamp');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('TIME'));
       }),
@@ -144,11 +132,7 @@ void main() {
       'should use custom colors',
       () => testZone.run(() {
         final customColors = {LogLevel.info: LogColor.red};
-        final logger = LiteLogger(
-          colors: customColors,
-          minLevel: LogLevel.info,
-        );
-        logger.info('Custom color');
+        LiteLogger(colors: customColors).info('Custom color');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('\x1B[31m')); // Red color
       }),
@@ -158,11 +142,7 @@ void main() {
       'should use custom emojis',
       () => testZone.run(() {
         final customEmojis = {LogLevel.info: '😀'};
-        final logger = LiteLogger(
-          emojis: customEmojis,
-          minLevel: LogLevel.info,
-        );
-        logger.info('Custom emoji');
+        LiteLogger(emojis: customEmojis).info('Custom emoji');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('😀'));
       }),
@@ -172,11 +152,7 @@ void main() {
       'should use custom level text',
       () => testZone.run(() {
         final customLevelText = {LogLevel.info: 'INF'};
-        final logger = LiteLogger(
-          levelText: customLevelText,
-          minLevel: LogLevel.info,
-        );
-        logger.info('Custom level text');
+        LiteLogger(levelText: customLevelText).info('Custom level text');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('[INF]'));
       }),
@@ -189,16 +165,13 @@ void main() {
         String? coloredMessage;
         LogLevel? logLevel;
 
-        final logger = LiteLogger(
+        LiteLogger(
           callback: (raw, colored, level) {
             rawMessage = raw;
             coloredMessage = colored;
             logLevel = level;
           },
-          minLevel: LogLevel.info,
-        );
-
-        logger.info('Callback test');
+        ).info('Callback test');
 
         expect(rawMessage, 'Callback test');
         expect(coloredMessage, contains('Callback test'));
@@ -210,10 +183,8 @@ void main() {
     test(
       'should lazily evaluate message functions',
       () => testZone.run(() {
-        bool functionCalled = false;
-        final logger = LiteLogger(minLevel: LogLevel.info);
-
-        logger.info(() {
+        var functionCalled = false;
+        const LiteLogger().info(() {
           functionCalled = true;
           return 'Lazy message';
         });
@@ -226,10 +197,8 @@ void main() {
     test(
       'should not lazily evaluate message functions if minLevel not met',
       () => testZone.run(() {
-        bool functionCalled = false;
-        final logger = LiteLogger(minLevel: LogLevel.warning);
-
-        logger.info(() {
+        var functionCalled = false;
+        const LiteLogger(minLevel: LogLevel.warning).info(() {
           functionCalled = true;
           return 'Lazy message';
         });
@@ -242,16 +211,13 @@ void main() {
     test(
       'should handle all convenience methods',
       () => testZone.run(() {
-        final logger = LiteLogger(
-          minLevel: LogLevel.debug,
-        ); // Enable all levels
-
-        logger.error('Error message');
-        logger.warning('Warning message');
-        logger.success('Success message');
-        logger.info('Info message');
-        logger.step('Step message');
-        logger.debug('Debug message');
+        const LiteLogger(minLevel: LogLevel.debug)
+          ..error('Error message')
+          ..warning('Warning message')
+          ..success('Success message')
+          ..info('Info message')
+          ..step('Step message')
+          ..debug('Debug message');
 
         expect(capturedPrints.length, 6);
         expect(capturedPrints[0], contains('Error message'));

@@ -12,7 +12,7 @@ import 'package:lite_logger/src/models/log_level.dart';
 typedef LogCallback = void Function(String raw, String colored, LogLevel level);
 
 /// Default color mapping for each log level when none is provided.
-const _defaultColors = {
+const Map<LogLevel, LogColor> _defaultColors = {
   LogLevel.info: LogColor.blue,
   LogLevel.warning: LogColor.yellow,
   LogLevel.error: LogColor.red,
@@ -24,7 +24,7 @@ const _defaultColors = {
 /// Default emoji/icon mapping for each log level.
 ///
 /// Icons enhance readability and quickly convey log intent.
-const _defaultEmojis = {
+const Map<LogLevel, String> _defaultEmojis = {
   LogLevel.info: '💡',
   LogLevel.warning: '⚠️',
   LogLevel.error: '❌',
@@ -36,7 +36,7 @@ const _defaultEmojis = {
 /// Default label text (fixed-width) for each log level.
 ///
 /// Ensures consistent alignment in formatted output.
-const _defaultLevelTexts = {
+const Map<LogLevel, String> _defaultLevelTexts = {
   LogLevel.error: 'ERRR',
   LogLevel.warning: 'WARN',
   LogLevel.success: 'SUCC',
@@ -58,8 +58,10 @@ String _defaultTimestamp(DateTime date) {
 ///
 /// Supports:
 /// - Customizable colors, icons, timestamps, and formatting tokens.
-/// - Lazy evaluation for log messages (functions are only executed if the log is emitted).
-/// - Optional callback for custom integration such as writing to file or remote service.
+/// - Lazy evaluation for log messages (functions are only executed
+/// if the log is emitted).
+/// - Optional callback for custom integration such as writing to file
+/// or remote service.
 ///
 /// ### Format Placeholders
 /// The `format` string supports these dynamic tokens:
@@ -144,16 +146,17 @@ class LiteLogger {
   /// ```
   void log(dynamic message, [LogLevel level = LogLevel.info]) {
     if (!_enabled) return;
-    if (!_shouldLog(_minLevel)) return;
+    if (!_shouldLog(level)) return;
 
     final timestamp = _timestamp(DateTime.now());
     final color = _colors[level]?.color ?? _defaultColors[level]!.color;
-    final reset = '\x1B[0m';
+    const reset = '\x1B[0m';
     final icon = _emojis[level] ?? _defaultEmojis[level];
     final levelText = _levelText[level] ?? _defaultLevelTexts[level];
 
     // Evaluate lazy message only when needed
-    final textMessage = message is Function ? message() : '$message';
+    final textMessage =
+        message is Function ? '${(message as Function)()}' : '$message';
 
     // Build formatted output
     final colored =
@@ -168,6 +171,7 @@ class LiteLogger {
     if (_callback != null) {
       _callback(textMessage, colored, level);
     } else {
+      // Output the log
       // ignore: avoid_print
       print(colored);
     }
@@ -219,7 +223,7 @@ class LiteLogger {
   /// logger.info('Service started on port 8080');
   /// logger.info(() => 'Service started on port 8080');
   /// ```
-  void info(dynamic message) => log(message, LogLevel.info);
+  void info(dynamic message) => log(message);
 
   /// Logs a message with [LogLevel.step].
   ///
@@ -246,7 +250,8 @@ class LiteLogger {
   /// ```
   void debug(dynamic message) => log(message, LogLevel.debug);
 
-  /// Determines whether this log level should be output when compared against `minLevel`.
+  /// Determines whether this log level should be output when compared
+  /// against `minLevel`.
   ///
   /// Returns `true` when this level's priority is **greater than or equal to**
   /// the provided `minLevel`.

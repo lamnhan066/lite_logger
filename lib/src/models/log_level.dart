@@ -1,9 +1,11 @@
 /// Represents the severity or importance of a log message.
 enum LogLevel {
-  /// Critical failures that require immediate attention and typically stop the process.
+  /// Critical failures that require immediate attention and
+  /// typically stop the process.
   error,
 
-  /// Recoverable issues that may degrade the application or indicate potential problems.
+  /// Recoverable issues that may degrade the application or
+  /// indicate potential problems.
   warning,
 
   /// Successful operations indicating that a task completed as expected.
