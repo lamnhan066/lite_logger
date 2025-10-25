@@ -1,3 +1,5 @@
+import 'dart:developer' as dev;
+
 import 'package:lite_logger/src/models/log_color.dart';
 import 'package:lite_logger/src/models/log_level.dart';
 
@@ -78,14 +80,19 @@ String _defaultTimestamp(DateTime date) {
 /// logger.log('This is hidden', LogLevel.info);  // Not logged
 /// ```
 class LiteLogger {
-  /// Creates an instance of [LiteLogger].
+  /// Creates a [LiteLogger] instance.
   ///
-  /// - [enabled]: Globally enables or disables logging without removing code.
-  /// - [minLevel]: Minimum severity required to output a log.
-  /// - [callback]: Optional custom handler instead of default print.
-  /// - [colors], [emojis], [levelTexts]: Customize visual style.
-  /// - [timestamp]: Function supplying a formatted timestamp string.
-  /// - [format]: Template for building each formatted log line.
+  /// - [enabled]   Enables or disables output globally.
+  /// - [minLevel]  Filters out messages below this log level.
+  /// - [callback]  If provided, receives raw and formatted log strings instead
+  ///               of writing to console.
+  /// - [colors]    Mapping of log levels to ANSI color codes.
+  /// - [emojis]    Mapping of log levels to icons or emojis.
+  /// - [levelTexts] Text labels used for each log level.
+  /// - [timestamp] Function to format timestamps.
+  /// - [format]    Template for the final log output. Supports: `@{color}`,
+  ///               `@{timestamp}`, `@{icon}`, `@{level}`, `@{message}`.
+  /// - [usePrint]  If true, uses `print()`. Otherwise, uses `developer.log()`.
   const LiteLogger({
     bool enabled = true,
     LogLevel minLevel = LogLevel.info,
@@ -95,6 +102,7 @@ class LiteLogger {
     Map<LogLevel, String> levelTexts = _defaultLevelTexts,
     String Function(DateTime) timestamp = _defaultTimestamp,
     String format = '@{color}@{timestamp} @{icon} [@{level}] @{message}',
+    bool usePrint = true,
   }) : _enabled = enabled,
        _callback = callback,
        _minLevel = minLevel,
@@ -102,7 +110,8 @@ class LiteLogger {
        _emojis = emojis,
        _levelText = levelTexts,
        _timestamp = timestamp,
-       _format = format;
+       _format = format,
+       _usePrint = usePrint;
 
   /// Whether logging is globally enabled.
   ///
@@ -133,6 +142,30 @@ class LiteLogger {
   ///
   /// See the class documentation above for available placeholders.
   final String _format;
+
+  /// Determines which output method is used for logging.
+  ///
+  /// If `true`, logs are written using `print()`. This is the most compatible
+  /// option and produces standard console output, but in Flutter debug mode
+  /// it may include prefixes like:
+  ///
+  ///   I/flutter (7004):
+  ///
+  /// If `false`, logs are written using `developer.log()` from
+  /// `dart:developer`. This reduces the Flutter prefix noise and
+  /// provides richer metadata(such as log level and category), though some
+  /// environments may still display a lightweight "[]" prefix.
+  ///
+  /// ┌────────────────────┬─────────────────────────────┬─────────────────────┐
+  /// │ Option            │ Output Source               │ Typical Prefix      │
+  /// ├────────────────────┼─────────────────────────────┼─────────────────────┤
+  /// │ true (default)     │ print()                     │ I/flutter (...)     │
+  /// │ false              │ developer.log()             │ [] or minimal       │
+  /// └────────────────────┴─────────────────────────────┴─────────────────────┘
+  ///
+  /// Choose `false` if you want cleaner output or integration with tools that
+  /// support structured developer logs.
+  final bool _usePrint;
 
   /// Logs a message if logging is enabled and the severity meets the threshold.
   ///
@@ -171,9 +204,13 @@ class LiteLogger {
     if (_callback != null) {
       _callback(textMessage, colored, level);
     } else {
-      // Output the log
-      // ignore: avoid_print
-      print(colored);
+      if (_usePrint) {
+        // Output the log
+        // ignore: avoid_print
+        print(colored);
+      } else {
+        dev.log(colored, name: '\r', level: level.index);
+      }
     }
   }
 
