@@ -1,0 +1,266 @@
+import 'dart:async'; // Required for Zone and ZoneSpecification
+
+import 'package:lite_logger/src/lite_logger.dart';
+import 'package:lite_logger/src/models/log_color.dart';
+import 'package:lite_logger/src/models/log_level.dart';
+import 'package:test/test.dart';
+
+// Utility to capture print output within a test zone.
+// This function creates and returns a new Zone where print statements are intercepted.
+Zone createTestZone(void Function(String s) fn) {
+  return Zone.current.fork(
+    specification: ZoneSpecification(
+      print: (Zone self, ZoneDelegate parent, Zone zone, String line) {
+        fn(line);
+      },
+    ),
+  );
+}
+
+void main() {
+  group('LogLevel', () {
+    test('should have correct number of levels', () {
+      expect(LogLevel.values.length, 6);
+    });
+
+    test('should have correct order of levels', () {
+      expect(LogLevel.error.index, 0);
+      expect(LogLevel.warning.index, 1);
+      expect(LogLevel.success.index, 2);
+      expect(LogLevel.info.index, 3);
+      expect(LogLevel.step.index, 4);
+      expect(LogLevel.debug.index, 5);
+    });
+  });
+
+  group('LogColor', () {
+    test('should have correct number of colors', () {
+      expect(LogColor.values.length, 6);
+    });
+
+    test('should return correct ANSI escape codes', () {
+      expect(LogColor.blue.color, '\x1B[34m');
+      expect(LogColor.yellow.color, '\x1B[33m');
+      expect(LogColor.red.color, '\x1B[31m');
+      expect(LogColor.gray.color, '\x1B[90m');
+      expect(LogColor.green.color, '\x1B[32m');
+      expect(LogColor.cyan.color, '\x1B[36m');
+    });
+  });
+
+  group('LiteLogger Basic Functionality', () {
+    late List<String> capturedPrints;
+    late Zone testZone;
+
+    setUp(() {
+      capturedPrints = [];
+      testZone = createTestZone((s) => capturedPrints.add(s));
+    });
+
+    // Each test will run in its own zone, so no tearDown is needed to reset print behavior.
+
+    test(
+      'should log messages when enabled and minLevel is met',
+      () => testZone.run(() {
+        final logger = LiteLogger(minLevel: LogLevel.info);
+        logger.info('Test message');
+        expect(capturedPrints, isNotEmpty);
+        expect(capturedPrints.first, contains('Test message'));
+      }),
+    );
+
+    test(
+      'should not log messages when disabled',
+      () => testZone.run(() {
+        final logger = LiteLogger(enabled: false);
+        logger.info('Test message');
+        expect(capturedPrints, isEmpty);
+      }),
+    );
+
+    test(
+      'should not log messages when minLevel is not met',
+      () => testZone.run(() {
+        final logger = LiteLogger(minLevel: LogLevel.warning);
+        logger.info('Test message');
+        expect(capturedPrints, isEmpty);
+      }),
+    );
+
+    test(
+      'should log messages when minLevel is met (equal level)',
+      () => testZone.run(() {
+        final logger = LiteLogger(minLevel: LogLevel.warning);
+        logger.warning('Warning message');
+        expect(capturedPrints, isNotEmpty);
+        expect(capturedPrints.first, contains('Warning message'));
+      }),
+    );
+
+    test(
+      'should log messages with correct color, icon, level, and timestamp',
+      () => testZone.run(() {
+        final logger = LiteLogger(minLevel: LogLevel.info);
+        logger.info('Info message');
+        final logOutput = capturedPrints.first;
+
+        expect(logOutput, contains('\x1B[34m')); // Blue color for info
+        expect(logOutput, contains('💡')); // Info icon
+        expect(logOutput, contains('[INFO]')); // Info level text
+        expect(logOutput, contains('[')); // Timestamp start
+        expect(logOutput, contains(']')); // Timestamp end
+        expect(logOutput, contains('Info message'));
+        expect(logOutput, endsWith('\x1B[0m')); // Reset color
+      }),
+    );
+
+    test(
+      'should use custom format string',
+      () => testZone.run(() {
+        final logger = LiteLogger(
+          format: '[@{level}] @{message} @{icon}',
+          minLevel: LogLevel.info,
+        );
+        logger.info('Custom format');
+        final logOutput = capturedPrints.first;
+        expect(logOutput, contains('[INFO] Custom format 💡'));
+      }),
+    );
+
+    test(
+      'should use custom timestamp function',
+      () => testZone.run(() {
+        final logger = LiteLogger(
+          timestamp: (date) => 'TIME',
+          minLevel: LogLevel.info,
+        );
+        logger.info('Custom timestamp');
+        final logOutput = capturedPrints.first;
+        expect(logOutput, contains('TIME'));
+      }),
+    );
+
+    test(
+      'should use custom colors',
+      () => testZone.run(() {
+        final customColors = {LogLevel.info: LogColor.red};
+        final logger = LiteLogger(
+          colors: customColors,
+          minLevel: LogLevel.info,
+        );
+        logger.info('Custom color');
+        final logOutput = capturedPrints.first;
+        expect(logOutput, contains('\x1B[31m')); // Red color
+      }),
+    );
+
+    test(
+      'should use custom emojis',
+      () => testZone.run(() {
+        final customEmojis = {LogLevel.info: '😀'};
+        final logger = LiteLogger(
+          emojis: customEmojis,
+          minLevel: LogLevel.info,
+        );
+        logger.info('Custom emoji');
+        final logOutput = capturedPrints.first;
+        expect(logOutput, contains('😀'));
+      }),
+    );
+
+    test(
+      'should use custom level text',
+      () => testZone.run(() {
+        final customLevelText = {LogLevel.info: 'INF'};
+        final logger = LiteLogger(
+          levelText: customLevelText,
+          minLevel: LogLevel.info,
+        );
+        logger.info('Custom level text');
+        final logOutput = capturedPrints.first;
+        expect(logOutput, contains('[INF]'));
+      }),
+    );
+
+    test(
+      'should call custom callback if provided',
+      () => testZone.run(() {
+        String? rawMessage;
+        String? coloredMessage;
+        LogLevel? logLevel;
+
+        final logger = LiteLogger(
+          callback: (raw, colored, level) {
+            rawMessage = raw;
+            coloredMessage = colored;
+            logLevel = level;
+          },
+          minLevel: LogLevel.info,
+        );
+
+        logger.info('Callback test');
+
+        expect(rawMessage, 'Callback test');
+        expect(coloredMessage, contains('Callback test'));
+        expect(logLevel, LogLevel.info);
+        expect(capturedPrints, isEmpty); // Should not print to console
+      }),
+    );
+
+    test(
+      'should lazily evaluate message functions',
+      () => testZone.run(() {
+        bool functionCalled = false;
+        final logger = LiteLogger(minLevel: LogLevel.info);
+
+        logger.info(() {
+          functionCalled = true;
+          return 'Lazy message';
+        });
+
+        expect(functionCalled, isTrue);
+        expect(capturedPrints.first, contains('Lazy message'));
+      }),
+    );
+
+    test(
+      'should not lazily evaluate message functions if minLevel not met',
+      () => testZone.run(() {
+        bool functionCalled = false;
+        final logger = LiteLogger(minLevel: LogLevel.warning);
+
+        logger.info(() {
+          functionCalled = true;
+          return 'Lazy message';
+        });
+
+        expect(functionCalled, isFalse);
+        expect(capturedPrints, isEmpty);
+      }),
+    );
+
+    test(
+      'should handle all convenience methods',
+      () => testZone.run(() {
+        final logger = LiteLogger(
+          minLevel: LogLevel.debug,
+        ); // Enable all levels
+
+        logger.error('Error message');
+        logger.warning('Warning message');
+        logger.success('Success message');
+        logger.info('Info message');
+        logger.step('Step message');
+        logger.debug('Debug message');
+
+        expect(capturedPrints.length, 6);
+        expect(capturedPrints[0], contains('Error message'));
+        expect(capturedPrints[1], contains('Warning message'));
+        expect(capturedPrints[2], contains('Success message'));
+        expect(capturedPrints[3], contains('Info message'));
+        expect(capturedPrints[4], contains('Step message'));
+        expect(capturedPrints[5], contains('Debug message'));
+      }),
+    );
+  });
+}

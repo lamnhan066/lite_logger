@@ -1,0 +1,11 @@
+name: lite_logger
+description: A starting point for Dart libraries or applications.
+version: 0.0.1
+repository: https://github.com/lamnhan066/lite_logger
+
+environment:
+  sdk: ^3.7.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6
