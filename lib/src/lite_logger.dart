@@ -83,7 +83,7 @@ class LiteLogger {
   /// - [enabled]: Globally enables or disables logging without removing code.
   /// - [minLevel]: Minimum severity required to output a log.
   /// - [callback]: Optional custom handler instead of default print.
-  /// - [colors], [emojis], [levelText]: Customize visual style.
+  /// - [colors], [emojis], [levelTexts]: Customize visual style.
   /// - [timestamp]: Function supplying a formatted timestamp string.
   /// - [format]: Template for building each formatted log line.
   const LiteLogger({
@@ -92,7 +92,7 @@ class LiteLogger {
     LogCallback? callback,
     Map<LogLevel, LogColor> colors = _defaultColors,
     Map<LogLevel, String> emojis = _defaultEmojis,
-    Map<LogLevel, String> levelText = _defaultLevelTexts,
+    Map<LogLevel, String> levelTexts = _defaultLevelTexts,
     String Function(DateTime) timestamp = _defaultTimestamp,
     String format = '@{color}@{timestamp} @{icon} [@{level}] @{message}',
   }) : _enabled = enabled,
@@ -100,7 +100,7 @@ class LiteLogger {
        _minLevel = minLevel,
        _colors = colors,
        _emojis = emojis,
-       _levelText = levelText,
+       _levelText = levelTexts,
        _timestamp = timestamp,
        _format = format;
 

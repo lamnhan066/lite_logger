@@ -152,7 +152,7 @@ void main() {
       'should use custom level text',
       () => testZone.run(() {
         final customLevelText = {LogLevel.info: 'INF'};
-        LiteLogger(levelText: customLevelText).info('Custom level text');
+        LiteLogger(levelTexts: customLevelText).info('Custom level text');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('[INF]'));
       }),
