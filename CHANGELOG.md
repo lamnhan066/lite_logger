@@ -1,3 +1,7 @@
+## 0.2.0
+
+- `usePrint` is changed to false by default.
+
 ## 0.1.2
 
 - Add `name` parameter to identify loggers in output.
