@@ -59,11 +59,13 @@ String _defaultTimestamp(DateTime date) {
 /// A lightweight, flexible logger designed for developers.
 ///
 /// Supports:
+/// - Named loggers for identifying different components in your application.
 /// - Customizable colors, icons, timestamps, and formatting tokens.
 /// - Lazy evaluation for log messages (functions are only executed
 /// if the log is emitted).
 /// - Optional callback for custom integration such as writing to file
 /// or remote service.
+/// - Choice between `print()` and `developer.log()` output methods.
 ///
 /// ### Format Placeholders
 /// The `format` string supports these dynamic tokens:
@@ -75,13 +77,16 @@ String _defaultTimestamp(DateTime date) {
 ///
 /// ### Example
 /// ```dart
-/// final logger = SimpleLogger(minLevel: LogLevel.warning);
+/// final logger = LiteLogger(name: 'App', minLevel: LogLevel.warning);
 /// logger.log('This is visible', LogLevel.error); // Logged
 /// logger.log('This is hidden', LogLevel.info);  // Not logged
 /// ```
 class LiteLogger {
   /// Creates a [LiteLogger] instance.
   ///
+  /// - [name]      Optional identifier for the logger. When provided, appears
+  ///               in the output as `[name]:` prefix. Useful for distinguishing
+  ///               multiple loggers in the same application.
   /// - [enabled]   Enables or disables output globally.
   /// - [minLevel]  Filters out messages below this log level.
   /// - [callback]  If provided, receives raw and formatted log strings instead
@@ -92,8 +97,11 @@ class LiteLogger {
   /// - [timestamp] Function to format timestamps.
   /// - [format]    Template for the final log output. Supports: `@{color}`,
   ///               `@{timestamp}`, `@{icon}`, `@{level}`, `@{message}`.
-  /// - [usePrint]  If true, uses `print()`. Otherwise, uses `developer.log()`.
+  /// - [usePrint]  If `true`, uses `print()` for output (default). If `false`,
+  ///               uses `developer.log()` from `dart:developer` for cleaner
+  ///               output with better tooling integration.
   const LiteLogger({
+    String name = '',
     bool enabled = true,
     LogLevel minLevel = LogLevel.info,
     LogCallback? callback,
@@ -103,7 +111,8 @@ class LiteLogger {
     String Function(DateTime) timestamp = _defaultTimestamp,
     String format = '@{color}@{timestamp} @{icon} [@{level}] @{message}',
     bool usePrint = true,
-  }) : _enabled = enabled,
+  }) : _name = name,
+       _enabled = enabled,
        _callback = callback,
        _minLevel = minLevel,
        _colors = colors,
@@ -112,6 +121,11 @@ class LiteLogger {
        _timestamp = timestamp,
        _format = format,
        _usePrint = usePrint;
+
+  /// The name of the logger.
+  ///
+  /// This is used to identify the logger in the output.
+  final String _name;
 
   /// Whether logging is globally enabled.
   ///
@@ -207,9 +221,13 @@ class LiteLogger {
       if (_usePrint) {
         // Output the log
         // ignore: avoid_print
-        print(colored);
+        print(_name.isEmpty ? colored : '$color[$_name]: $colored');
       } else {
-        dev.log(colored, name: '\r', level: level.index);
+        dev.log(
+          colored,
+          name: _name.isEmpty ? '\r' : _name,
+          level: level.index,
+        );
       }
     }
   }

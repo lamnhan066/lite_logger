@@ -20,6 +20,7 @@ A fast, lightweight, and customizable logging utility for Dart & Flutter — wit
 
 ```dart
 final logger = LiteLogger(
+    name: 'MyApp',          // Optional: identify the logger in output
     enabled: true,
     minLevel: LogLevel.debug, // show all levels
 );
@@ -38,10 +39,12 @@ logger.error('Unable to access database');
 
 ```dart
 final logger = LiteLogger(
+  name: 'MyService',        // Logger name for identification
   enabled: true,
   minLevel: LogLevel.debug,
   timestamp: (dt) => '[${dt.toIso8601String()}]',
   format: '@{color}@{timestamp} @{icon} [@{level}] @{message}',
+  usePrint: true,          // Use print() (default) or developer.log()
   callback: (raw, colored, level) {
     // Save logs to file or send to a remote endpoint
   },
@@ -80,6 +83,53 @@ const logger = LiteLogger(
     sendToServer({'level': level.text, 'message': raw});
   },
 );
+```
+
+---
+
+## Logger Naming
+
+Use the `name` parameter to identify different loggers in your application. This is especially useful when you have multiple loggers for different components.
+
+```dart
+final apiLogger = LiteLogger(name: 'API');
+final dbLogger = LiteLogger(name: 'Database');
+final authLogger = LiteLogger(name: 'Auth');
+
+apiLogger.info('Fetching user data');
+dbLogger.debug('Executing query...');
+authLogger.warning('Token expiring soon');
+```
+
+**Output with names:**
+
+```txt
+[API]: [12:34:56] 💡 [INFO] Fetching user data
+[Database]: [12:34:56] 🧠 [DBUG] Executing query...
+[Auth]: [12:34:57] ⚠️ [WARN] Token expiring soon
+```
+
+---
+
+## Output Methods
+
+LiteLogger supports two output methods controlled by the `usePrint` parameter:
+
+* **`usePrint: true`** (default): Uses `print()` for maximum compatibility
+  * Works everywhere (console, Flutter, web)
+  * May include platform-specific prefixes (e.g., `I/flutter` in Flutter)
+
+* **`usePrint: false`**: Uses `developer.log()` from `dart:developer`
+  * Cleaner output with less platform noise
+  * Better integration with development tools
+  * Supports structured logging metadata
+
+```dart
+// Using print() (default)
+final logger1 = LiteLogger(name: 'App', usePrint: true);
+
+// Using developer.log()
+final logger2 = LiteLogger(name: 'App', usePrint: false);
 ```
 
 ---

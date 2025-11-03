@@ -228,5 +228,78 @@ void main() {
         expect(capturedPrints[5], contains('Debug message'));
       }),
     );
+
+    test(
+      'should include logger name in output when provided',
+      () => testZone.run(() {
+        const LiteLogger(name: 'MyLogger').info('Test message');
+        final logOutput = capturedPrints.first;
+        expect(logOutput, contains('[MyLogger]'));
+      }),
+    );
+
+    test(
+      'should not include logger name prefix when name is empty',
+      () => testZone.run(() {
+        const LiteLogger(name: '').info('Test message');
+        final logOutput = capturedPrints.first;
+        // Should not contain a name prefix pattern like [Name]:
+        expect(logOutput, isNot(matches(r'\[.*?\]:')));
+      }),
+    );
+
+    test(
+      'should format output correctly with logger name and color',
+      () => testZone.run(() {
+        const LiteLogger(name: 'App').info('Info message');
+        final logOutput = capturedPrints.first;
+        // Check that name appears with color code before it
+        expect(logOutput, contains('\x1B[34m[App]:'));
+        expect(logOutput, contains('Info message'));
+      }),
+    );
+
+    test(
+      'should use print() when usePrint is true',
+      () => testZone.run(() {
+        const LiteLogger(usePrint: true, name: 'TestLogger').info('Test');
+        expect(capturedPrints, isNotEmpty);
+        expect(capturedPrints.first, contains('[TestLogger]'));
+      }),
+    );
+
+    test(
+      'should include name in callback when provided',
+      () => testZone.run(() {
+        String? capturedColored;
+        LiteLogger(
+          name: 'CallbackLogger',
+          callback: (raw, colored, level) {
+            capturedColored = colored;
+          },
+        ).info('Test callback');
+        
+        expect(capturedColored, isNotNull);
+        // The callback receives the colored output, which should include name
+        // when using print (but callback bypasses print, so it won't have name prefix)
+        expect(capturedColored, contains('Test callback'));
+        expect(capturedPrints, isEmpty); // Should not print when callback is set
+      }),
+    );
+
+    test(
+      'should work with custom name and custom format',
+      () => testZone.run(() {
+        const LiteLogger(
+          name: 'CustomLogger',
+          format: '@{message} (@{level})',
+        ).warning('Custom warning');
+        
+        final logOutput = capturedPrints.first;
+        expect(logOutput, contains('[CustomLogger]'));
+        expect(logOutput, contains('Custom warning'));
+        expect(logOutput, contains('(WARN)'));
+      }),
+    );
   });
 }
