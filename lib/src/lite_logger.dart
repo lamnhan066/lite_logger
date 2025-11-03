@@ -171,7 +171,7 @@ class LiteLogger {
   /// environments may still display a lightweight "[]" prefix.
   ///
   /// ┌────────────────────┬─────────────────────────────┬─────────────────────┐
-  /// │ Option            │ Output Source               │ Typical Prefix      │
+  /// │ Option             │ Output Source               │ Typical Prefix      │
   /// ├────────────────────┼─────────────────────────────┼─────────────────────┤
   /// │ true (default)     │ print()                     │ I/flutter (...)     │
   /// │ false              │ developer.log()             │ [] or minimal       │
@@ -221,7 +221,7 @@ class LiteLogger {
       if (_usePrint) {
         // Output the log
         // ignore: avoid_print
-        print(_name.isEmpty ? colored : '$color[$_name]: $colored');
+        print(_name.isEmpty ? colored : '$color[$_name] $colored');
       } else {
         dev.log(
           colored,
