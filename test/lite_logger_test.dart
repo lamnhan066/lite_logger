@@ -86,7 +86,10 @@ void main() {
     test(
       'should log messages when minLevel is met (equal level)',
       () => testZone.run(() {
-        const LiteLogger(minLevel: LogLevel.warning, usePrint: true).warning('Warning message');
+        const LiteLogger(
+          minLevel: LogLevel.warning,
+          usePrint: true,
+        ).warning('Warning message');
         expect(capturedPrints, isNotEmpty);
         expect(capturedPrints.first, contains('Warning message'));
       }),
@@ -123,7 +126,10 @@ void main() {
     test(
       'should use custom timestamp function',
       () => testZone.run(() {
-        LiteLogger(timestamp: (date) => 'TIME', usePrint: true).info('Custom timestamp');
+        LiteLogger(
+          timestamp: (date) => 'TIME',
+          usePrint: true,
+        ).info('Custom timestamp');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('TIME'));
       }),
@@ -153,7 +159,10 @@ void main() {
       'should use custom level text',
       () => testZone.run(() {
         final customLevelText = {LogLevel.info: 'INF'};
-        LiteLogger(levelTexts: customLevelText, usePrint: true).info('Custom level text');
+        LiteLogger(
+          levelTexts: customLevelText,
+          usePrint: true,
+        ).info('Custom level text');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('[INF]'));
       }),
@@ -242,7 +251,7 @@ void main() {
     test(
       'should not include logger name prefix when name is empty',
       () => testZone.run(() {
-        const LiteLogger(name: '', usePrint: true).info('Test message');
+        const LiteLogger(usePrint: true).info('Test message');
         final logOutput = capturedPrints.first;
         // Should not contain a name prefix pattern like [Name]:
         expect(logOutput, isNot(matches(r'\[.*?\]:')));
@@ -279,12 +288,16 @@ void main() {
             capturedColored = colored;
           },
         ).info('Test callback');
-        
+
         expect(capturedColored, isNotNull);
         // The callback receives the colored output, which should include name
-        // when using print (but callback bypasses print, so it won't have name prefix)
+        // when using print (but callback bypasses print, so it won't have name
+        // prefix)
         expect(capturedColored, contains('Test callback'));
-        expect(capturedPrints, isEmpty); // Should not print when callback is set
+        expect(
+          capturedPrints,
+          isEmpty,
+        ); // Should not print when callback is set
       }),
     );
 
@@ -296,7 +309,7 @@ void main() {
           format: '@{message} (@{level})',
           usePrint: true,
         ).warning('Custom warning');
-        
+
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('[CustomLogger]'));
         expect(logOutput, contains('Custom warning'));
