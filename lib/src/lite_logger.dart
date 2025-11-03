@@ -97,7 +97,7 @@ class LiteLogger {
   /// - [timestamp] Function to format timestamps.
   /// - [format]    Template for the final log output. Supports: `@{color}`,
   ///               `@{timestamp}`, `@{icon}`, `@{level}`, `@{message}`.
-  /// - [usePrint]  If `true`, uses `print()` for output (default). If `false`,
+  /// - [usePrint]  If `true`, uses `print()` for output. If `false` (default),
   ///               uses `developer.log()` from `dart:developer` for cleaner
   ///               output with better tooling integration.
   const LiteLogger({
@@ -110,7 +110,7 @@ class LiteLogger {
     Map<LogLevel, String> levelTexts = _defaultLevelTexts,
     String Function(DateTime) timestamp = _defaultTimestamp,
     String format = '@{color}@{timestamp} @{icon} [@{level}] @{message}',
-    bool usePrint = true,
+    bool usePrint = false,
   }) : _name = name,
        _enabled = enabled,
        _callback = callback,
@@ -159,26 +159,23 @@ class LiteLogger {
 
   /// Determines which output method is used for logging.
   ///
+  /// If `false` (default), logs are written using `developer.log()` from
+  /// `dart:developer`. This reduces the Flutter prefix noise and
+  /// provides richer metadata(such as log level and category), though some
+  /// environments may still display a lightweight "[]" prefix.
+  ///
   /// If `true`, logs are written using `print()`. This is the most compatible
   /// option and produces standard console output, but in Flutter debug mode
   /// it may include prefixes like:
   ///
   ///   I/flutter (7004):
   ///
-  /// If `false`, logs are written using `developer.log()` from
-  /// `dart:developer`. This reduces the Flutter prefix noise and
-  /// provides richer metadata(such as log level and category), though some
-  /// environments may still display a lightweight "[]" prefix.
-  ///
   /// ┌────────────────────┬─────────────────────────────┬─────────────────────┐
   /// │ Option             │ Output Source               │ Typical Prefix      │
   /// ├────────────────────┼─────────────────────────────┼─────────────────────┤
-  /// │ true (default)     │ print()                     │ I/flutter (...)     │
-  /// │ false              │ developer.log()             │ [] or minimal       │
+  /// │ false (default)    │ developer.log()             │ [] or minimal       │
+  /// │ true               │ print()                     │ I/flutter (...)     │
   /// └────────────────────┴─────────────────────────────┴─────────────────────┘
-  ///
-  /// Choose `false` if you want cleaner output or integration with tools that
-  /// support structured developer logs.
   final bool _usePrint;
 
   /// Logs a message if logging is enabled and the severity meets the threshold.

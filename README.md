@@ -44,12 +44,14 @@ final logger = LiteLogger(
   minLevel: LogLevel.debug,
   timestamp: (dt) => '[${dt.toIso8601String()}]',
   format: '@{color}@{timestamp} @{icon} [@{level}] @{message}',
-  usePrint: true,          // Use print() (default) or developer.log()
+  usePrint: false,         // Use developer.log() (default) or print()
   callback: (raw, colored, level) {
     // Save logs to file or send to a remote endpoint
   },
 );
 ```
+<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+read_file
 
 ### Supported Format Tokens
 
@@ -104,9 +106,9 @@ authLogger.warning('Token expiring soon');
 **Output with names:**
 
 ```txt
-[API]: [12:34:56] 💡 [INFO] Fetching user data
-[Database]: [12:34:56] 🧠 [DBUG] Executing query...
-[Auth]: [12:34:57] ⚠️ [WARN] Token expiring soon
+[API] [12:34:56] 💡 [INFO] Fetching user data
+[Database] [12:34:56] 🧠 [DBUG] Executing query...
+[Auth] [12:34:57] ⚠️ [WARN] Token expiring soon
 ```
 
 ---
@@ -115,21 +117,21 @@ authLogger.warning('Token expiring soon');
 
 LiteLogger supports two output methods controlled by the `usePrint` parameter:
 
-* **`usePrint: true`** (default): Uses `print()` for maximum compatibility
-  * Works everywhere (console, Flutter, web)
-  * May include platform-specific prefixes (e.g., `I/flutter` in Flutter)
-
-* **`usePrint: false`**: Uses `developer.log()` from `dart:developer`
+* **`usePrint: false`** (default): Uses `developer.log()` from `dart:developer`
   * Cleaner output with less platform noise
   * Better integration with development tools
   * Supports structured logging metadata
 
-```dart
-// Using print() (default)
-final logger1 = LiteLogger(name: 'App', usePrint: true);
+* **`usePrint: true`**: Uses `print()` for maximum compatibility
+  * Works everywhere (console, Flutter, web)
+  * May include platform-specific prefixes (e.g., `I/flutter` in Flutter)
 
-// Using developer.log()
-final logger2 = LiteLogger(name: 'App', usePrint: false);
+```dart
+// Using developer.log() (default)
+final logger1 = LiteLogger(name: 'App', usePrint: false);
+
+// Using print()
+final logger2 = LiteLogger(name: 'App', usePrint: true);
 ```
 
 ---

@@ -39,15 +39,25 @@ void main() {
     ..warning('Low disk space')
     ..error('Unable to access database');
 
-  print('\n=== Using developer.log() instead of print() ===');
+  print('\n=== Using developer.log() (default) ===');
   LiteLogger(
     name: 'DevLogger',
-    usePrint: false, // Use developer.log() for cleaner output
+    // usePrint defaults to false (developer.log())
     minLevel: LogLevel.debug,
   )
     ..info('This uses developer.log()')
     ..warning('Less platform noise')
     ..error('Better for development tools');
+
+  print('\n=== Using print() instead of developer.log() ===');
+  LiteLogger(
+    name: 'PrintLogger',
+    usePrint: true, // Explicitly use print() instead of default
+    minLevel: LogLevel.debug,
+  )
+    ..info('This uses print()')
+    ..warning('May include platform prefixes')
+    ..error('Maximum compatibility');
 
   print('\n=== Custom Format with Named Logger ===');
   LiteLogger(
