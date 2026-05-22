@@ -1,6 +1,10 @@
+## 0.3.0
+
+- `usePrint` is now `true` by default so log output uses `print()` unless explicitly disabled.
+
 ## 0.2.0
 
-- `usePrint` is changed to false by default.
+- `usePrint` was changed to false by default.
 
 ## 0.1.2
 
