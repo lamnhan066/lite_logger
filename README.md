@@ -44,7 +44,7 @@ final logger = LiteLogger(
   minLevel: LogLevel.debug,
   timestamp: (dt) => '[${dt.toIso8601String()}]',
   format: '@{color}@{timestamp} @{icon} [@{level}] @{message}',
-  usePrint: false,         // Use developer.log() (default) or print()
+  usePrint: true,          // Use print() (default) or developer.log()
   callback: (raw, colored, level) {
     // Save logs to file or send to a remote endpoint
   },
@@ -117,21 +117,22 @@ authLogger.warning('Token expiring soon');
 
 LiteLogger supports two output methods controlled by the `usePrint` parameter:
 
-* **`usePrint: false`** (default): Uses `developer.log()` from `dart:developer`
+* **`usePrint: true`** (default): Uses `print()` for maximum compatibility
+  * Works reliably in packages and apps where `developer.log()` output may not surface
+  * Produces standard console output
+  * May include platform-specific prefixes (e.g., `I/flutter` in Flutter)
+
+* **`usePrint: false`**: Uses `developer.log()` from `dart:developer`
   * Cleaner output with less platform noise
   * Better integration with development tools
   * Supports structured logging metadata
 
-* **`usePrint: true`**: Uses `print()` for maximum compatibility
-  * Works everywhere (console, Flutter, web)
-  * May include platform-specific prefixes (e.g., `I/flutter` in Flutter)
-
 ```dart
-// Using developer.log() (default)
-final logger1 = LiteLogger(name: 'App', usePrint: false);
+// Using print() (default)
+final logger1 = LiteLogger(name: 'App');
 
-// Using print()
-final logger2 = LiteLogger(name: 'App', usePrint: true);
+// Using developer.log()
+final logger2 = LiteLogger(name: 'App', usePrint: false);
 ```
 
 ---

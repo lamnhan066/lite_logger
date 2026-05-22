@@ -37,25 +37,21 @@ void main() {
     ..warning('Low disk space')
     ..error('Unable to access database');
 
-  print('\n=== Using developer.log() (default) ===');
+  print('\n=== Using print() (default) ===');
+  const LiteLogger(name: 'DevLogger', minLevel: LogLevel.debug)
+    ..info('This uses print() by default')
+    ..warning('Works better when package logs do not surface developer.log()')
+    ..error('Explicit developer.log() is still available');
+
+  print('\n=== Using developer.log() instead of print() ===');
   const LiteLogger(
-      name: 'DevLogger',
-      // usePrint defaults to false (developer.log())
+      name: 'PrintLogger',
+      usePrint: false,
       minLevel: LogLevel.debug,
     )
     ..info('This uses developer.log()')
-    ..warning('Less platform noise')
-    ..error('Better for development tools');
-
-  print('\n=== Using print() instead of developer.log() ===');
-  const LiteLogger(
-      name: 'PrintLogger',
-      usePrint: true, // Explicitly use print() instead of default
-      minLevel: LogLevel.debug,
-    )
-    ..info('This uses print()')
-    ..warning('May include platform prefixes')
-    ..error('Maximum compatibility');
+    ..warning('Cleaner output for tooling')
+    ..error('Explicitly opt out of print()');
 
   print('\n=== Custom Format with Named Logger ===');
   const LiteLogger(name: 'Custom', format: '@{icon} @{level}: @{message}')

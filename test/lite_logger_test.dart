@@ -61,9 +61,18 @@ void main() {
     test(
       'should log messages when enabled and minLevel is met',
       () => testZone.run(() {
-        const LiteLogger(usePrint: true).info('Test message');
+        const LiteLogger().info('Test message');
         expect(capturedPrints, isNotEmpty);
         expect(capturedPrints.first, contains('Test message'));
+      }),
+    );
+
+    test(
+      'should use print() by default',
+      () => testZone.run(() {
+        const LiteLogger().info('Default print message');
+        expect(capturedPrints, isNotEmpty);
+        expect(capturedPrints.first, contains('Default print message'));
       }),
     );
 
@@ -86,10 +95,7 @@ void main() {
     test(
       'should log messages when minLevel is met (equal level)',
       () => testZone.run(() {
-        const LiteLogger(
-          minLevel: LogLevel.warning,
-          usePrint: true,
-        ).warning('Warning message');
+        const LiteLogger(minLevel: LogLevel.warning).warning('Warning message');
         expect(capturedPrints, isNotEmpty);
         expect(capturedPrints.first, contains('Warning message'));
       }),
@@ -98,7 +104,7 @@ void main() {
     test(
       'should log messages with correct color, icon, level, and timestamp',
       () => testZone.run(() {
-        const LiteLogger(usePrint: true).info('Info message');
+        const LiteLogger().info('Info message');
         final logOutput = capturedPrints.first;
 
         expect(logOutput, contains('\x1B[34m')); // Blue color for info
@@ -116,7 +122,6 @@ void main() {
       () => testZone.run(() {
         const LiteLogger(
           format: '[@{level}] @{message} @{icon}',
-          usePrint: true,
         ).info('Custom format');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('[INFO] Custom format 💡'));
@@ -126,10 +131,7 @@ void main() {
     test(
       'should use custom timestamp function',
       () => testZone.run(() {
-        LiteLogger(
-          timestamp: (date) => 'TIME',
-          usePrint: true,
-        ).info('Custom timestamp');
+        LiteLogger(timestamp: (date) => 'TIME').info('Custom timestamp');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('TIME'));
       }),
@@ -139,7 +141,7 @@ void main() {
       'should use custom colors',
       () => testZone.run(() {
         final customColors = {LogLevel.info: LogColor.red};
-        LiteLogger(colors: customColors, usePrint: true).info('Custom color');
+        LiteLogger(colors: customColors).info('Custom color');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('\x1B[31m')); // Red color
       }),
@@ -149,7 +151,7 @@ void main() {
       'should use custom emojis',
       () => testZone.run(() {
         final customEmojis = {LogLevel.info: '😀'};
-        LiteLogger(emojis: customEmojis, usePrint: true).info('Custom emoji');
+        LiteLogger(emojis: customEmojis).info('Custom emoji');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('😀'));
       }),
@@ -159,10 +161,7 @@ void main() {
       'should use custom level text',
       () => testZone.run(() {
         final customLevelText = {LogLevel.info: 'INF'};
-        LiteLogger(
-          levelTexts: customLevelText,
-          usePrint: true,
-        ).info('Custom level text');
+        LiteLogger(levelTexts: customLevelText).info('Custom level text');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('[INF]'));
       }),
@@ -194,7 +193,7 @@ void main() {
       'should lazily evaluate message functions',
       () => testZone.run(() {
         var functionCalled = false;
-        const LiteLogger(usePrint: true).info(() {
+        const LiteLogger().info(() {
           functionCalled = true;
           return 'Lazy message';
         });
@@ -221,7 +220,7 @@ void main() {
     test(
       'should handle all convenience methods',
       () => testZone.run(() {
-        const LiteLogger(minLevel: LogLevel.debug, usePrint: true)
+        const LiteLogger(minLevel: LogLevel.debug)
           ..error('Error message')
           ..warning('Warning message')
           ..success('Success message')
@@ -242,7 +241,7 @@ void main() {
     test(
       'should include logger name in output when provided',
       () => testZone.run(() {
-        const LiteLogger(name: 'MyLogger', usePrint: true).info('Test message');
+        const LiteLogger(name: 'MyLogger').info('Test message');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('[MyLogger]'));
       }),
@@ -251,7 +250,7 @@ void main() {
     test(
       'should not include logger name prefix when name is empty',
       () => testZone.run(() {
-        const LiteLogger(usePrint: true).info('Test message');
+        const LiteLogger().info('Test message');
         final logOutput = capturedPrints.first;
         // Should not contain a name prefix pattern like [Name]:
         expect(logOutput, isNot(matches(r'\[.*?\]:')));
@@ -261,7 +260,7 @@ void main() {
     test(
       'should format output correctly with logger name and color',
       () => testZone.run(() {
-        const LiteLogger(name: 'App', usePrint: true).info('Info message');
+        const LiteLogger(name: 'App').info('Info message');
         final logOutput = capturedPrints.first;
         // Check that name appears with color code before it
         expect(logOutput, contains('\x1B[34m[App]'));
@@ -272,7 +271,7 @@ void main() {
     test(
       'should use print() when usePrint is true',
       () => testZone.run(() {
-        const LiteLogger(usePrint: true, name: 'TestLogger').info('Test');
+        const LiteLogger(name: 'TestLogger').info('Test');
         expect(capturedPrints, isNotEmpty);
         expect(capturedPrints.first, contains('[TestLogger]'));
       }),
@@ -307,7 +306,6 @@ void main() {
         const LiteLogger(
           name: 'CustomLogger',
           format: '@{message} (@{level})',
-          usePrint: true,
         ).warning('Custom warning');
 
         final logOutput = capturedPrints.first;
