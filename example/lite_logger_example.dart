@@ -4,7 +4,13 @@
 import 'package:lite_logger/lite_logger.dart';
 
 void main() {
-  print('=== Basic Usage ===');
+  // NOTE: `output` defaults to LogOutput.auto: `developer.log()` is preferred
+  // in debug builds (keeps ANSI colors, avoids the `flutter:` logcat escaping
+  // that renders `\x1B[36m` as `^[[36m`), while `print()` is used in release
+  // builds where `developer.log()` is not surfaced. `developer.log()` needs
+  // a debugger/DevTools attached to be visible, so plain `dart run` terminals
+  // show only the explicit `output: LogOutput.print` sections below.
+  print('=== Basic Usage (auto output) ===');
   const LiteLogger(name: 'App', minLevel: LogLevel.debug)
     ..info('Application started')
     ..step('Loading configuration...')
@@ -37,21 +43,28 @@ void main() {
     ..warning('Low disk space')
     ..error('Unable to access database');
 
-  print('\n=== Using print() (default) ===');
-  const LiteLogger(name: 'DevLogger', minLevel: LogLevel.debug)
-    ..info('This uses print() by default')
-    ..warning('Works better when package logs do not surface developer.log()')
-    ..error('Explicit developer.log() is still available');
+  print('\n=== Using print() explicitly (plain terminals) ===');
+  const LiteLogger(
+      name: 'DevLogger',
+      minLevel: LogLevel.debug,
+      output: LogOutput.print,
+    )
+    ..info('This uses print() explicitly')
+    ..warning('Use this for plain `dart run` terminals without a debugger')
+    ..error('Explicit print() is still available');
 
-  print('\n=== Using developer.log() instead of print() ===');
+  print('\n=== Using developer.log() explicitly ===');
   const LiteLogger(
       name: 'PrintLogger',
-      usePrint: false,
+      output: LogOutput.developerLog,
       minLevel: LogLevel.debug,
     )
     ..info('This uses developer.log()')
     ..warning('Cleaner output for tooling')
     ..error('Explicitly opt out of print()');
+  // NOTE: the default (LogOutput.auto) already prefers developer.log() in
+  // debug builds, so `output: LogOutput.developerLog` is only needed to force
+  // it (e.g. in release builds).
 
   print('\n=== Custom Format with Named Logger ===');
   const LiteLogger(name: 'Custom', format: '@{icon} @{level}: @{message}')

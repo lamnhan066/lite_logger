@@ -44,7 +44,7 @@ final logger = LiteLogger(
   minLevel: LogLevel.debug,
   timestamp: (dt) => '[${dt.toIso8601String()}]',
   format: '@{color}@{timestamp} @{icon} [@{level}] @{message}',
-  usePrint: true,          // Use print() (default) or developer.log()
+  // output: LogOutput.auto (default) | LogOutput.print | LogOutput.developerLog
   callback: (raw, colored, level) {
     // Save logs to file or send to a remote endpoint
   },
@@ -115,25 +115,46 @@ authLogger.warning('Token expiring soon');
 
 ## Output Methods
 
-LiteLogger supports two output methods controlled by the `usePrint` parameter:
+LiteLogger supports two output methods controlled by the `output` parameter
+(`LogOutput` enum):
 
-* **`usePrint: true`** (default): Uses `print()` for maximum compatibility
+* **`LogOutput.auto`** (default): Prefers `developer.log()`, which keeps
+  ANSI colors intact. `print()` output from a Flutter app is forwarded through
+  `logcat`/syslog, which escapes the ESC byte (`\x1B` → `^[`) and destroys
+  colors (the `flutter: ^[[36m...` symptom). The single exception is
+  release/product builds, where `developer.log()` output is not surfaced —
+  there `print()` is used so logs remain visible.
+  * NOTE: `developer.log()` needs a debugger/DevTools attached to be visible.
+    For plain `dart run` terminals without a debugger, pass
+    `output: LogOutput.print`.
+
+* **`LogOutput.print`**: Always uses `print()` for maximum compatibility
   * Works reliably in packages and apps where `developer.log()` output may not surface
   * Produces standard console output
   * May include platform-specific prefixes (e.g., `I/flutter` in Flutter)
+  * On Flutter mobile, ANSI colors are escaped by `logcat` (see above)
 
-* **`usePrint: false`**: Uses `developer.log()` from `dart:developer`
+* **`LogOutput.developerLog`**: Always uses `developer.log()` from `dart:developer`
   * Cleaner output with less platform noise
   * Better integration with development tools
   * Supports structured logging metadata
 
 ```dart
-// Using print() (default)
+// Auto (default): developer.log() in debug, print() in release
 final logger1 = LiteLogger(name: 'App');
 
-// Using developer.log()
-final logger2 = LiteLogger(name: 'App', usePrint: false);
+// Always print() — e.g. plain `dart run` terminals
+final logger2 = LiteLogger(name: 'App', output: LogOutput.print);
+
+// Always developer.log()
+final logger3 = LiteLogger(name: 'App', output: LogOutput.developerLog);
 ```
+
+> The old `usePrint` boolean is deprecated in favor of `output` but still
+> fully supported: `usePrint: true` behaves as `output: LogOutput.print`,
+> `usePrint: false` as `output: LogOutput.developerLog`, and an explicitly
+> passed `usePrint` takes precedence over `output`. Migration is optional —
+> existing code keeps compiling and behaving as before.
 
 ---
 
