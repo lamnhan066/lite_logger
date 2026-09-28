@@ -2,6 +2,7 @@ import 'dart:developer' as dev;
 
 import 'package:lite_logger/src/models/log_color.dart';
 import 'package:lite_logger/src/models/log_level.dart';
+import 'package:lite_logger/src/models/log_output.dart';
 
 /// A function type used to intercept formatted and raw log messages.
 ///
@@ -56,6 +57,20 @@ String _defaultTimestamp(DateTime date) {
       '${date.second.toString().padLeft(2, '0')}]';
 }
 
+/// Removes a single leading [prefix] from [source] when present.
+///
+/// Used to avoid emitting the ANSI color escape twice when the `[name]`
+/// prefix (which already carries the color) is prepended to a formatted
+/// message that itself starts with the same color code. If [source] does
+/// not start with [prefix] (e.g. a custom `format` that doesn't begin with
+/// `@{color}`), it is returned unchanged.
+String _withoutLeading(String source, String prefix) {
+  if (prefix.isEmpty) return source;
+  return source.startsWith(prefix)
+      ? source.substring(prefix.length)
+      : source;
+}
+
 /// A lightweight, flexible logger designed for developers.
 ///
 /// Supports:
@@ -97,9 +112,16 @@ class LiteLogger {
   /// - [timestamp] Function to format timestamps.
   /// - [format]    Template for the final log output. Supports: `@{color}`,
   ///               `@{timestamp}`, `@{icon}`, `@{level}`, `@{message}`.
-  /// - [usePrint]  If `true` (default), uses `print()` for output. If `false`,
-  ///               uses `developer.log()` from `dart:developer` for cleaner
-  ///               output with better tooling integration.
+  /// - [output]    Selects the output method via [LogOutput]. Defaults to
+  ///               [LogOutput.auto], which prefers `developer.log()` (preserves
+  ///               ANSI colors, avoids the `flutter:`/`logcat` escaping that
+  ///               turns `\x1B[36m` into `^[[36m`), except in release/product
+  ///               builds where `developer.log()` output is not surfaced —
+  ///               then `print()` is used.
+  /// - [usePrint]  Deprecated: use [output] instead. `true` maps to
+  ///               [LogOutput.print], `false` to [LogOutput.developerLog].
+  ///               When explicitly passed, it takes precedence over [output]
+  ///               so existing code keeps working unchanged.
   const LiteLogger({
     String name = '',
     bool enabled = true,
@@ -110,7 +132,10 @@ class LiteLogger {
     Map<LogLevel, String> levelTexts = _defaultLevelTexts,
     String Function(DateTime) timestamp = _defaultTimestamp,
     String format = '@{color}@{timestamp} @{icon} [@{level}] @{message}',
-    bool usePrint = true,
+    LogOutput output = LogOutput.auto,
+    @Deprecated('Use output instead. '
+        'true maps to LogOutput.print, false to LogOutput.developerLog.')
+    bool? usePrint,
   }) : _name = name,
        _enabled = enabled,
        _callback = callback,
@@ -120,6 +145,7 @@ class LiteLogger {
        _levelText = levelTexts,
        _timestamp = timestamp,
        _format = format,
+       _output = output,
        _usePrint = usePrint;
 
   /// The name of the logger.
@@ -159,24 +185,74 @@ class LiteLogger {
 
   /// Determines which output method is used for logging.
   ///
-  /// If `false`, logs are written using `developer.log()` from
-  /// `dart:developer`. This reduces the Flutter prefix noise and
-  /// provides richer metadata (such as log level and category), though some
-  /// environments may still display a lightweight "[]" prefix.
+  /// Controlled by the `output` constructor parameter:
+  /// - [LogOutput.print] → always `print()`.
+  /// - [LogOutput.developerLog] → always `developer.log()`.
+  /// - [LogOutput.auto] (default) → automatic (see [_effectiveUsePrint]).
   ///
-  /// If `true`, logs are written using `print()`. This is the most compatible
-  /// option and produces standard console output, but in Flutter debug mode
-  /// it may include prefixes like:
+  /// The deprecated `usePrint` constructor parameter is still honored when
+  /// explicitly passed (`true` → `print()`, `false` → `developer.log()`) and
+  /// takes precedence over `output`, so existing code keeps compiling and
+  /// behaving exactly as before.
+  ///
+  /// If `developer.log()` is the resolved method, logs are written using
+  /// `developer.log()` from `dart:developer`. This reduces the Flutter prefix
+  /// noise and provides richer metadata (such as log level and category),
+  /// though some environments may still display a lightweight "[]" prefix.
+  ///
+  /// If `print()` is the resolved method, logs are written using `print()`.
+  /// This is the most compatible option and produces standard console output,
+  /// but in Flutter debug mode it may include prefixes like:
   ///
   ///   I/flutter (7004):
   ///
   /// ┌────────────────────┬─────────────────────────────┬─────────────────────┐
   /// │ Option             │ Output Source               │ Typical Prefix      │
   /// ├────────────────────┼─────────────────────────────┼─────────────────────┤
-  /// │ false              │ developer.log()             │ [] or minimal       │
-  /// │ true (default)     │ print()                     │ I/flutter (...)     │
+  /// │ developerLog       │ developer.log()             │ [] or minimal       │
+  /// │ print              │ print()                     │ I/flutter (...)     │
+  /// │ auto (default)     │ automatic                   │ depends on build    │
   /// └────────────────────┴─────────────────────────────┴─────────────────────┘
-  final bool _usePrint;
+  final LogOutput _output;
+
+  /// Deprecated: use [_output] instead.
+  ///
+  /// Kept so existing code keeps compiling and behaving as before. When
+  /// explicitly passed (non-null), takes precedence over [_output] in
+  /// [_effectiveUsePrint].
+  final bool? _usePrint;
+
+  /// Resolves the effective output method.
+  ///
+  /// An explicitly passed (deprecated) `usePrint` value is always respected
+  /// first. Otherwise explicit [LogOutput.print] / [LogOutput.developerLog]
+  /// are used as-is, while [LogOutput.auto] prefers `developer.log()`
+  /// because `print()` output from a Flutter app is forwarded through `logcat`/syslog, which
+  /// escapes the ESC byte (`\x1B` → `^[`) and destroys ANSI colors. The
+  /// single exception is release/product builds (`dart.vm.product`), where
+  /// `developer.log()` output is not surfaced anywhere — there `print()` is
+  /// used so logs remain visible.
+  ///
+  /// NOTE for pure Dart CLI usage: `developer.log()` is only visible when a
+  /// VM-service client (IDE debugger, DevTools) is attached. Running
+  /// `dart run` from a plain terminal with the default (auto) logger will
+  /// therefore show nothing — pass `output: LogOutput.print` explicitly in
+  /// that case.
+  bool get _effectiveUsePrint {
+    if (_usePrint != null) return _usePrint;
+    switch (_output) {
+      case LogOutput.print:
+        return true;
+      case LogOutput.developerLog:
+        return false;
+      case LogOutput.auto:
+        // `bool.fromEnvironment` is compile-time constant friendly, works on
+        // all platforms (including web), and needs no Flutter or dart:io
+        // dependency.
+        const isProduct = bool.fromEnvironment('dart.vm.product');
+        return isProduct;
+    }
+  }
 
   /// Logs a message if logging is enabled and the severity meets the threshold.
   ///
@@ -215,16 +291,20 @@ class LiteLogger {
     if (_callback != null) {
       _callback(textMessage, colored, level);
     } else {
-      if (_usePrint) {
-        // Output the log
+      if (_effectiveUsePrint) {
+        // Output the log. The `colored` message already starts with the
+        // level color under the default format, so strip that leading code
+        // before prepending the (also colored) `[name]` prefix — otherwise
+        // the color escape is emitted twice in a row (`...m[Name] ...m...`).
+        final output =
+            _name.isEmpty
+                ? colored
+                : '$color[$_name] ${_withoutLeading(colored, color)}';
+        // `print` is one of this logger's two intentional output methods.
         // ignore: avoid_print
-        print(_name.isEmpty ? colored : '$color[$_name] $colored');
+        print(output);
       } else {
-        dev.log(
-          colored,
-          name: _name.isEmpty ? '\r' : _name,
-          level: level.index,
-        );
+        dev.log(colored, name: _name, level: level.index);
       }
     }
   }

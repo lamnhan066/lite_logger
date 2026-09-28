@@ -3,6 +3,7 @@ import 'dart:async'; // Required for Zone and ZoneSpecification
 import 'package:lite_logger/src/lite_logger.dart';
 import 'package:lite_logger/src/models/log_color.dart';
 import 'package:lite_logger/src/models/log_level.dart';
+import 'package:lite_logger/src/models/log_output.dart';
 import 'package:test/test.dart';
 
 // Utility to capture print output within a test zone.
@@ -61,18 +62,78 @@ void main() {
     test(
       'should log messages when enabled and minLevel is met',
       () => testZone.run(() {
-        const LiteLogger().info('Test message');
+        const LiteLogger(output: LogOutput.print).info('Test message');
         expect(capturedPrints, isNotEmpty);
         expect(capturedPrints.first, contains('Test message'));
       }),
     );
 
     test(
-      'should use print() by default',
+      'should route to developer.log() by default in debug (auto mode)',
       () => testZone.run(() {
-        const LiteLogger().info('Default print message');
+        // In a debug/test VM, the default (LogOutput.auto) prefers
+        // developer.log(), so nothing reaches print().
+        const LiteLogger().info('Default auto message');
+        expect(capturedPrints, isEmpty);
+      }),
+    );
+
+    test(
+      'should use print() when output is LogOutput.print',
+      () => testZone.run(() {
+        const LiteLogger(
+          output: LogOutput.print,
+        ).info('Explicit print message');
         expect(capturedPrints, isNotEmpty);
-        expect(capturedPrints.first, contains('Default print message'));
+        expect(capturedPrints.first, contains('Explicit print message'));
+      }),
+    );
+
+    test(
+      'should use developer.log() when output is LogOutput.developerLog',
+      () => testZone.run(() {
+        const LiteLogger(
+          output: LogOutput.developerLog,
+        ).info('Explicit dev log message');
+        expect(capturedPrints, isEmpty);
+      }),
+    );
+
+    test(
+      'should honor deprecated usePrint true (maps to print)',
+      () => testZone.run(() {
+        // `usePrint` is deprecated in favor of `output`; these tests guard
+        // backwards compatibility so they intentionally use the old API.
+        // ignore: deprecated_member_use
+        const LiteLogger(usePrint: true).info('Legacy print message');
+        expect(capturedPrints, isNotEmpty);
+        expect(capturedPrints.first, contains('Legacy print message'));
+      }),
+    );
+
+    test(
+      'should honor deprecated usePrint false (maps to developer.log)',
+      () => testZone.run(() {
+        // `usePrint` is deprecated in favor of `output`; these tests guard
+        // backwards compatibility so they intentionally use the old API.
+        // ignore: deprecated_member_use
+        const LiteLogger(usePrint: false).info('Legacy dev log message');
+        expect(capturedPrints, isEmpty);
+      }),
+    );
+
+    test(
+      'should let explicit usePrint take precedence over output',
+      () => testZone.run(() {
+        // `usePrint` is deprecated in favor of `output`; these tests guard
+        // backwards compatibility so they intentionally use the old API.
+        // ignore: deprecated_member_use
+        const LiteLogger(
+          output: LogOutput.developerLog,
+          usePrint: true,
+        ).info('Precedence message');
+        expect(capturedPrints, isNotEmpty);
+        expect(capturedPrints.first, contains('Precedence message'));
       }),
     );
 
@@ -95,7 +156,8 @@ void main() {
     test(
       'should log messages when minLevel is met (equal level)',
       () => testZone.run(() {
-        const LiteLogger(minLevel: LogLevel.warning).warning('Warning message');
+        const LiteLogger(minLevel: LogLevel.warning, output: LogOutput.print)
+            .warning('Warning message');
         expect(capturedPrints, isNotEmpty);
         expect(capturedPrints.first, contains('Warning message'));
       }),
@@ -104,7 +166,7 @@ void main() {
     test(
       'should log messages with correct color, icon, level, and timestamp',
       () => testZone.run(() {
-        const LiteLogger().info('Info message');
+        const LiteLogger(output: LogOutput.print).info('Info message');
         final logOutput = capturedPrints.first;
 
         expect(logOutput, contains('\x1B[34m')); // Blue color for info
@@ -122,6 +184,7 @@ void main() {
       () => testZone.run(() {
         const LiteLogger(
           format: '[@{level}] @{message} @{icon}',
+          output: LogOutput.print,
         ).info('Custom format');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('[INFO] Custom format 💡'));
@@ -131,7 +194,10 @@ void main() {
     test(
       'should use custom timestamp function',
       () => testZone.run(() {
-        LiteLogger(timestamp: (date) => 'TIME').info('Custom timestamp');
+        LiteLogger(
+          timestamp: (date) => 'TIME',
+          output: LogOutput.print,
+        ).info('Custom timestamp');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('TIME'));
       }),
@@ -141,7 +207,10 @@ void main() {
       'should use custom colors',
       () => testZone.run(() {
         final customColors = {LogLevel.info: LogColor.red};
-        LiteLogger(colors: customColors).info('Custom color');
+        LiteLogger(
+          colors: customColors,
+          output: LogOutput.print,
+        ).info('Custom color');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('\x1B[31m')); // Red color
       }),
@@ -151,7 +220,10 @@ void main() {
       'should use custom emojis',
       () => testZone.run(() {
         final customEmojis = {LogLevel.info: '😀'};
-        LiteLogger(emojis: customEmojis).info('Custom emoji');
+        LiteLogger(
+          emojis: customEmojis,
+          output: LogOutput.print,
+        ).info('Custom emoji');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('😀'));
       }),
@@ -161,7 +233,8 @@ void main() {
       'should use custom level text',
       () => testZone.run(() {
         final customLevelText = {LogLevel.info: 'INF'};
-        LiteLogger(levelTexts: customLevelText).info('Custom level text');
+        LiteLogger(levelTexts: customLevelText, output: LogOutput.print)
+            .info('Custom level text');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('[INF]'));
       }),
@@ -193,7 +266,7 @@ void main() {
       'should lazily evaluate message functions',
       () => testZone.run(() {
         var functionCalled = false;
-        const LiteLogger().info(() {
+        const LiteLogger(output: LogOutput.print).info(() {
           functionCalled = true;
           return 'Lazy message';
         });
@@ -220,7 +293,7 @@ void main() {
     test(
       'should handle all convenience methods',
       () => testZone.run(() {
-        const LiteLogger(minLevel: LogLevel.debug)
+        const LiteLogger(minLevel: LogLevel.debug, output: LogOutput.print)
           ..error('Error message')
           ..warning('Warning message')
           ..success('Success message')
@@ -241,7 +314,10 @@ void main() {
     test(
       'should include logger name in output when provided',
       () => testZone.run(() {
-        const LiteLogger(name: 'MyLogger').info('Test message');
+        const LiteLogger(
+          name: 'MyLogger',
+          output: LogOutput.print,
+        ).info('Test message');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('[MyLogger]'));
       }),
@@ -250,7 +326,7 @@ void main() {
     test(
       'should not include logger name prefix when name is empty',
       () => testZone.run(() {
-        const LiteLogger().info('Test message');
+        const LiteLogger(output: LogOutput.print).info('Test message');
         final logOutput = capturedPrints.first;
         // Should not contain a name prefix pattern like [Name]:
         expect(logOutput, isNot(matches(r'\[.*?\]:')));
@@ -260,7 +336,10 @@ void main() {
     test(
       'should format output correctly with logger name and color',
       () => testZone.run(() {
-        const LiteLogger(name: 'App').info('Info message');
+        const LiteLogger(
+          name: 'App',
+          output: LogOutput.print,
+        ).info('Info message');
         final logOutput = capturedPrints.first;
         // Check that name appears with color code before it
         expect(logOutput, contains('\x1B[34m[App]'));
@@ -269,9 +348,12 @@ void main() {
     );
 
     test(
-      'should use print() when usePrint is true',
+      'should use print() when output is LogOutput.print with a name',
       () => testZone.run(() {
-        const LiteLogger(name: 'TestLogger').info('Test');
+        const LiteLogger(
+          name: 'TestLogger',
+          output: LogOutput.print,
+        ).info('Test');
         expect(capturedPrints, isNotEmpty);
         expect(capturedPrints.first, contains('[TestLogger]'));
       }),
@@ -306,12 +388,30 @@ void main() {
         const LiteLogger(
           name: 'CustomLogger',
           format: '@{message} (@{level})',
+          output: LogOutput.print,
         ).warning('Custom warning');
 
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('[CustomLogger]'));
         expect(logOutput, contains('Custom warning'));
         expect(logOutput, contains('(WARN)'));
+      }),
+    );
+
+    test(
+      'should apply the level color only once with a named logger',
+      () => testZone.run(() {
+        const LiteLogger(
+          name: 'App',
+          output: LogOutput.print,
+        ).info('Info message');
+        final logOutput = capturedPrints.first;
+        // The `[App]` prefix must share the message's color instead of
+        // emitting the escape code a second time.
+        final colorOccurrences =
+            '\x1B[34m'.allMatches(logOutput).length;
+        expect(colorOccurrences, 1);
+        expect(logOutput, endsWith('\x1B[0m'));
       }),
     );
   });
