@@ -1,3 +1,24 @@
+## 0.3.1
+
+- Add `LogOutput` enum (`auto`/`print`/`developerLog`) via the new `output`
+  parameter to control the output method. `LogOutput.auto` (default) prefers
+  `developer.log()` in debug builds so ANSI colors survive (fixes `^[[36m`
+  output when `print()` is forwarded through `logcat` on Flutter mobile),
+  while `print()` is used in release/product builds where `developer.log()`
+  is not surfaced. Pass `output: LogOutput.print` explicitly for plain
+  `dart run` terminals without a debugger.
+- Deprecate the `usePrint` boolean in favor of `output`. This is
+  non-breaking: an explicitly passed `usePrint` still works and takes
+  precedence over `output`, so existing code keeps compiling and behaving as
+  before. Optional migration: `usePrint: true` → `output: LogOutput.print`,
+  `usePrint: false` → `output: LogOutput.developerLog`, omit both for the
+  new automatic default (`LogOutput.auto`).
+- Fix named loggers emitting the ANSI color escape twice
+  (`<color>[Name] <color>...` → `<color>[Name] ...`).
+- Remove the `'\r'` carriage-return hack for the `developer.log()` name of
+  unnamed loggers (it could garble terminal lines); the name is now passed
+  through as-is.
+
 ## 0.3.0
 
 - `usePrint` is now `true` by default so log output uses `print()` unless explicitly disabled.
