@@ -1,3 +1,12 @@
+## 0.3.2
+
+- `print()` output is now plain text: ANSI color escapes and the trailing
+  reset code are stripped (they were mangled to `^[[36m` by `logcat` on
+  Flutter mobile), while `developer.log()` and the `callback` still receive
+  the fully colored message.
+- Log lines are now built lazily — only the variant actually emitted
+  (`colored` vs `plain`) is formatted.
+
 ## 0.3.1
 
 - Add `LogOutput` enum (`auto`/`print`/`developerLog`) via the new `output`
