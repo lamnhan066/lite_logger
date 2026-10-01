@@ -57,18 +57,28 @@ String _defaultTimestamp(DateTime date) {
       '${date.second.toString().padLeft(2, '0')}]';
 }
 
-/// Removes a single leading [prefix] from [source] when present.
+/// Builds a log line from `format` by substituting all placeholders.
 ///
-/// Used to avoid emitting the ANSI color escape twice when the `[name]`
-/// prefix (which already carries the color) is prepended to a formatted
-/// message that itself starts with the same color code. If [source] does
-/// not start with [prefix] (e.g. a custom `format` that doesn't begin with
-/// `@{color}`), it is returned unchanged.
-String _withoutLeading(String source, String prefix) {
-  if (prefix.isEmpty) return source;
-  return source.startsWith(prefix)
-      ? source.substring(prefix.length)
-      : source;
+/// When [color] is empty, the `@{color}` token is removed and no ANSI codes
+/// are emitted — used for `print()` output where color escapes would be
+/// mangled (e.g. Flutter `logcat` shows `^[[36m`). When [color] is non-empty
+/// a trailing [reset] code is appended to avoid leaking color to later output.
+String _buildMessage({
+  required String format,
+  required String color,
+  required String reset,
+  required String timestamp,
+  required String icon,
+  required String levelText,
+  required String textMessage,
+}) {
+  final body = format
+      .replaceAll('@{color}', color)
+      .replaceAll('@{timestamp}', timestamp)
+      .replaceAll('@{icon}', icon)
+      .replaceAll('@{level}', levelText)
+      .replaceAll('@{message}', textMessage);
+  return color.isEmpty ? body : '$body$reset';
 }
 
 /// A lightweight, flexible logger designed for developers.
@@ -133,8 +143,10 @@ class LiteLogger {
     String Function(DateTime) timestamp = _defaultTimestamp,
     String format = '@{color}@{timestamp} @{icon} [@{level}] @{message}',
     LogOutput output = LogOutput.auto,
-    @Deprecated('Use output instead. '
-        'true maps to LogOutput.print, false to LogOutput.developerLog.')
+    @Deprecated(
+      'Use output instead. '
+      'true maps to LogOutput.print, false to LogOutput.developerLog.',
+    )
     bool? usePrint,
   }) : _name = name,
        _enabled = enabled,
@@ -271,40 +283,49 @@ class LiteLogger {
     final timestamp = _timestamp(DateTime.now());
     final color = _colors[level]?.color ?? _defaultColors[level]!.color;
     const reset = '\x1B[0m';
-    final icon = _emojis[level] ?? _defaultEmojis[level];
-    final levelText = _levelText[level] ?? _defaultLevelTexts[level];
+    final icon = (_emojis[level] ?? _defaultEmojis[level])!;
+    final levelText = (_levelText[level] ?? _defaultLevelTexts[level])!;
 
     // Evaluate lazy message only when needed
     final textMessage =
         message is Function ? '${(message as Function)()}' : '$message';
 
-    // Build formatted output
-    final colored =
-        _format
-            .replaceAll('@{color}', color)
-            .replaceAll('@{timestamp}', timestamp)
-            .replaceAll('@{icon}', icon!)
-            .replaceAll('@{level}', levelText!)
-            .replaceAll('@{message}', textMessage) +
-        reset;
+    // Lazily build formatted output. `colored()` keeps ANSI codes for
+    // `developer.log()` and the callback. `plain()` strips them for `print()`,
+    // where color escapes are mangled (e.g. Flutter `logcat` renders
+    // `\x1B[36m` as `^[[36m`). Only the variant actually emitted is built.
+    String colored() => _buildMessage(
+      format: _format,
+      color: color,
+      reset: reset,
+      timestamp: timestamp,
+      icon: icon,
+      levelText: levelText,
+      textMessage: textMessage,
+    );
+    // Lazily build the plain variant only when it will actually be printed.
+    String plain() => _buildMessage(
+      format: _format,
+      color: '',
+      reset: '',
+      timestamp: timestamp,
+      icon: icon,
+      levelText: levelText,
+      textMessage: textMessage,
+    );
 
     if (_callback != null) {
-      _callback(textMessage, colored, level);
+      _callback(textMessage, colored(), level);
     } else {
       if (_effectiveUsePrint) {
-        // Output the log. The `colored` message already starts with the
-        // level color under the default format, so strip that leading code
-        // before prepending the (also colored) `[name]` prefix — otherwise
-        // the color escape is emitted twice in a row (`...m[Name] ...m...`).
-        final output =
-            _name.isEmpty
-                ? colored
-                : '$color[$_name] ${_withoutLeading(colored, color)}';
+        // Plain output: no ANSI codes, plain `[name]` prefix.
+        final plained = plain();
+        final output = _name.isEmpty ? plained : '[$_name] $plained';
         // `print` is one of this logger's two intentional output methods.
         // ignore: avoid_print
         print(output);
       } else {
-        dev.log(colored, name: _name, level: level.index);
+        dev.log(colored(), name: _name, level: level.index);
       }
     }
   }

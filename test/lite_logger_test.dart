@@ -164,18 +164,19 @@ void main() {
     );
 
     test(
-      'should log messages with correct color, icon, level, and timestamp',
+      'should log without color in print mode',
       () => testZone.run(() {
         const LiteLogger(output: LogOutput.print).info('Info message');
         final logOutput = capturedPrints.first;
 
-        expect(logOutput, contains('\x1B[34m')); // Blue color for info
+        // print() output strips ANSI codes (logcat would mangle them).
+        expect(logOutput, isNot(contains('\x1B[')));
         expect(logOutput, contains('💡')); // Info icon
         expect(logOutput, contains('[INFO]')); // Info level text
         expect(logOutput, contains('[')); // Timestamp start
         expect(logOutput, contains(']')); // Timestamp end
         expect(logOutput, contains('Info message'));
-        expect(logOutput, endsWith('\x1B[0m')); // Reset color
+        expect(logOutput, isNot(endsWith('\x1B[0m'))); // No reset code
       }),
     );
 
@@ -204,15 +205,23 @@ void main() {
     );
 
     test(
-      'should use custom colors',
+      'should strip custom colors in print mode',
       () => testZone.run(() {
         final customColors = {LogLevel.info: LogColor.red};
         LiteLogger(
           colors: customColors,
           output: LogOutput.print,
         ).info('Custom color');
-        final logOutput = capturedPrints.first;
-        expect(logOutput, contains('\x1B[31m')); // Red color
+        // print() mode strips ANSI codes.
+        expect(capturedPrints.first, isNot(contains('\x1B[')));
+
+        // The colored path (developer.log / callback) still applies them.
+        String? coloredMessage;
+        LiteLogger(
+          colors: customColors,
+          callback: (raw, colored, level) => coloredMessage = colored,
+        ).info('Custom color');
+        expect(coloredMessage, contains('\x1B[31m')); // Red color
       }),
     );
 
@@ -334,15 +343,16 @@ void main() {
     );
 
     test(
-      'should format output correctly with logger name and color',
+      'should format output correctly with logger name without color codes',
       () => testZone.run(() {
         const LiteLogger(
           name: 'App',
           output: LogOutput.print,
         ).info('Info message');
         final logOutput = capturedPrints.first;
-        // Check that name appears with color code before it
-        expect(logOutput, contains('\x1B[34m[App]'));
+        // print() mode uses a plain `[name]` prefix with no ANSI codes.
+        expect(logOutput, contains('[App]'));
+        expect(logOutput, isNot(contains('\x1B[')));
         expect(logOutput, contains('Info message'));
       }),
     );
@@ -399,19 +409,17 @@ void main() {
     );
 
     test(
-      'should apply the level color only once with a named logger',
+      'should emit no color codes in print mode with a named logger',
       () => testZone.run(() {
         const LiteLogger(
           name: 'App',
           output: LogOutput.print,
         ).info('Info message');
         final logOutput = capturedPrints.first;
-        // The `[App]` prefix must share the message's color instead of
-        // emitting the escape code a second time.
-        final colorOccurrences =
-            '\x1B[34m'.allMatches(logOutput).length;
-        expect(colorOccurrences, 1);
-        expect(logOutput, endsWith('\x1B[0m'));
+        // print() output must be plain text (logcat mangles ESC bytes).
+        expect('\x1B['.allMatches(logOutput).length, 0);
+        expect(logOutput, contains('[App]'));
+        expect(logOutput, isNot(contains('\x1B[0m')));
       }),
     );
   });
