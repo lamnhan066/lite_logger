@@ -4,8 +4,12 @@
 import 'package:lite_logger/lite_logger.dart';
 
 void main() {
-  print('=== Basic Usage (auto output) ===');
-  const LiteLogger(name: 'App', minLevel: LogLevel.debug)
+  print('=== Basic Usage ===');
+  const LiteLogger(
+      name: 'App',
+      minLevel: LogLevel.debug,
+      output: LogOutput.print,
+    )
     ..info('Application started')
     ..step('Loading configuration...')
     ..debug(() => 'Debug timestamp: ${DateTime.now().millisecondsSinceEpoch}')
@@ -14,9 +18,13 @@ void main() {
     ..error('Unable to access database');
 
   print('\n=== Multiple Named Loggers ===');
-  const apiLogger = LiteLogger(name: 'API');
-  const dbLogger = LiteLogger(name: 'Database');
-  const authLogger = LiteLogger(name: 'Auth');
+  const apiLogger = LiteLogger(name: 'API', output: LogOutput.print);
+  const dbLogger = LiteLogger(
+    name: 'Database',
+    minLevel: LogLevel.debug,
+    output: LogOutput.print,
+  );
+  const authLogger = LiteLogger(name: 'Auth', output: LogOutput.print);
 
   apiLogger.info('Fetching user data');
   dbLogger.debug('Executing query...');
@@ -47,6 +55,7 @@ void main() {
     ..warning('Use this for plain `dart run` terminals without a debugger')
     ..error('Explicit print() is still available');
 
+  // No lines below without a debugger attached — that is expected.
   print('\n=== Using developer.log() explicitly ===');
   const LiteLogger(
       name: 'PrintLogger',
@@ -58,12 +67,20 @@ void main() {
     ..error('Explicitly opt out of print()');
 
   print('\n=== Custom Format with Named Logger ===');
-  const LiteLogger(name: 'Custom', format: '@{icon} @{level}: @{message}')
+  const LiteLogger(
+      name: 'Custom',
+      format: '@{icon} @{level}: @{message}',
+      output: LogOutput.print,
+    )
     ..info('Custom format example')
     ..success('With logger name prefix');
 
   print('\n=== Lazy Evaluation Example ===');
-  const logger = LiteLogger(name: 'Lazy');
+  const logger = LiteLogger(
+    name: 'Lazy',
+    minLevel: LogLevel.debug,
+    output: LogOutput.print,
+  );
   var expensiveCallCount = 0;
 
   logger.debug(() {
