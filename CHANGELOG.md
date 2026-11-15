@@ -1,3 +1,15 @@
+## 0.3.3
+
+- `callback` now receives the `[name]` prefix in the colored message when a
+  logger name is set, matching `print()` output (`raw` is unchanged).
+- `log()` and the convenience methods now take `Object?` instead of
+  `dynamic`. Lazy messages use a zero-arg function check, so non-`String`
+  results evaluate correctly and functions with required arguments no longer
+  throw.
+- Example output is visible with plain `dart run` by using
+  `LogOutput.print` in the demo sections.
+- Simplified doc comments and README.
+
 ## 0.3.2
 
 - `print()` output is now plain text: ANSI color escapes and the trailing
