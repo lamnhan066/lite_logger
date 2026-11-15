@@ -1,28 +1,29 @@
 # LiteLogger
 
-A fast, lightweight, and customizable logging utility for Dart & Flutter — with colored output, emoji icons, log filtering, and powerful formatting.
+A lightweight logging utility for Dart & Flutter with colored output, log filtering, and custom formatting.
 
----
+## Installation
+
+```yaml
+dependencies:
+  lite_logger: ^0.3.2
+```
 
 ## Features
 
-* **Log Level Filtering**: Control output visibility (`error`, `warning`, `success`, `info`, `step`, `debug`)
-* **Colorized Output**: ANSI terminal colors for instant visual clarity
-* **Emoji Indicators**: Makes reading console logs effortless
-* **Lazy Message Evaluation**: Prevents unnecessary computation
-* **Custom Formatting**: Fully configurable message templates
-* **Callback Support**: Redirect logs to file, cloud, or analytics
-* **Global Enable/Disable Switch**
-
----
+* Log level filtering (`error`, `warning`, `success`, `info`, `step`, `debug`)
+* ANSI colors and emoji indicators
+* Lazy message evaluation
+* Custom format templates
+* Callback support (file, cloud, analytics)
+* Global enable/disable switch
 
 ## Getting Started
 
 ```dart
 final logger = LiteLogger(
-    name: 'MyApp',          // Optional: identify the logger in output
-    enabled: true,
-    minLevel: LogLevel.debug, // show all levels
+  name: 'MyApp',
+  minLevel: LogLevel.debug,
 );
 
 logger.info('Application started');
@@ -33,14 +34,11 @@ logger.warning('Low disk space');
 logger.error('Unable to access database');
 ```
 
----
-
 ## Advanced Configuration
 
 ```dart
 final logger = LiteLogger(
-  name: 'MyService',        // Logger name for identification
-  enabled: true,
+  name: 'MyService',
   minLevel: LogLevel.debug,
   timestamp: (dt) => '[${dt.toIso8601String()}]',
   format: '@{color}@{timestamp} @{icon} [@{level}] @{message}',
@@ -50,10 +48,8 @@ final logger = LiteLogger(
   },
 );
 ```
-<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
-read_file
 
-### Supported Format Tokens
+### Format Tokens
 
 | Token          | Description         |
 | -------------- | ------------------- |
@@ -63,35 +59,27 @@ read_file
 | `@{level}`     | Short log label     |
 | `@{message}`   | Content of the log  |
 
----
-
-## Log Filtering Example
+## Log Filtering
 
 ```dart
 const logger = LiteLogger(minLevel: LogLevel.warning);
 
-logger.log('This is info', LogLevel.info);     // ❌ Not logged
-logger.log('This is warning', LogLevel.warning); // ✅ Logged
-logger.log('This is error', LogLevel.error);     // ✅ Logged
+logger.log('This is info', LogLevel.info);       // skipped
+logger.log('This is warning', LogLevel.warning); // logged
+logger.log('This is error', LogLevel.error);     // logged
 ```
 
----
-
-## Using Callback for Custom Output
+## Callback
 
 ```dart
 const logger = LiteLogger(
   callback: (raw, colored, level) {
-    sendToServer({'level': level.text, 'message': raw});
+    sendToServer({'level': level.name, 'message': raw});
   },
 );
 ```
 
----
-
 ## Logger Naming
-
-Use the `name` parameter to identify different loggers in your application. This is especially useful when you have multiple loggers for different components.
 
 ```dart
 final apiLogger = LiteLogger(name: 'API');
@@ -103,7 +91,7 @@ dbLogger.debug('Executing query...');
 authLogger.warning('Token expiring soon');
 ```
 
-**Output with names:**
+Output:
 
 ```txt
 [API] [12:34:56] 💡 [INFO] Fetching user data
@@ -111,59 +99,22 @@ authLogger.warning('Token expiring soon');
 [Auth] [12:34:57] ⚠️ [WARN] Token expiring soon
 ```
 
----
-
 ## Output Methods
 
-LiteLogger supports two output methods controlled by the `output` parameter
-(`LogOutput` enum):
+The `output` parameter (`LogOutput`) selects the output method:
 
-* **`LogOutput.auto`** (default): Prefers `developer.log()`, which keeps
-  ANSI colors intact. `print()` output from a Flutter app is forwarded through
-  `logcat`/syslog, which escapes the ESC byte (`\x1B` → `^[`) and destroys
-  colors (the `flutter: ^[[36m...` symptom). The single exception is
-  release/product builds, where `developer.log()` output is not surfaced —
-  there `print()` is used so logs remain visible.
-  * NOTE: `developer.log()` needs a debugger/DevTools attached to be visible.
-    For plain `dart run` terminals without a debugger, pass
-    `output: LogOutput.print`.
-
-* **`LogOutput.print`**: Always uses `print()` for maximum compatibility
-  * Works reliably in packages and apps where `developer.log()` output may not surface
-  * Produces standard console output
-  * May include platform-specific prefixes (e.g., `I/flutter` in Flutter)
-  * On Flutter mobile, ANSI colors are escaped by `logcat` (see above)
-
-* **`LogOutput.developerLog`**: Always uses `developer.log()` from `dart:developer`
-  * Cleaner output with less platform noise
-  * Better integration with development tools
-  * Supports structured logging metadata
+* **`LogOutput.auto`** (default): `developer.log()` in debug (keeps ANSI colors), `print()` in release. Needs a debugger/DevTools attached; for plain `dart run` terminals use `LogOutput.print`.
+* **`LogOutput.print`**: Always `print()`. Most compatible; on Flutter mobile ANSI colors are stripped because `logcat` escapes them.
+* **`LogOutput.developerLog`**: Always `developer.log()`.
 
 ```dart
-// Auto (default): developer.log() in debug, print() in release
 final logger1 = LiteLogger(name: 'App');
-
-// Always print() — e.g. plain `dart run` terminals
 final logger2 = LiteLogger(name: 'App', output: LogOutput.print);
-
-// Always developer.log()
 final logger3 = LiteLogger(name: 'App', output: LogOutput.developerLog);
 ```
 
-> The old `usePrint` boolean is deprecated in favor of `output` but still
-> fully supported: `usePrint: true` behaves as `output: LogOutput.print`,
-> `usePrint: false` as `output: LogOutput.developerLog`, and an explicitly
-> passed `usePrint` takes precedence over `output`. Migration is optional —
-> existing code keeps compiling and behaving as before.
-
----
+> `usePrint` is deprecated in favor of `output` but still works: `true` maps to `LogOutput.print`, `false` to `LogOutput.developerLog`. An explicit `usePrint` takes precedence over `output`.
 
 ## License
 
-Licensed under the **MIT License** — free for personal and commercial use.
-
----
-
-## Contributing
-
-Contributions, bug reports, and ideas are always welcome!
+MIT License — see [LICENSE](LICENSE).

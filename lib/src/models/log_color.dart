@@ -1,26 +1,24 @@
-/// Defines terminal colors using ANSI escape codes for styling log output.
-///
-/// Colors are typically used to visually distinguish log levels.
+/// Terminal color as an ANSI escape code.
 enum LogColor {
-  /// Blue text — commonly used for informational messages.
+  /// Blue, default for info.
   blue,
 
-  /// Yellow text — commonly used for warnings.
+  /// Yellow, default for warning.
   yellow,
 
-  /// Red text — commonly used for errors.
+  /// Red, default for error.
   red,
 
-  /// Gray text — commonly used for debug-level output.
+  /// Gray, default for debug.
   gray,
 
-  /// Green text — commonly used for success messages.
+  /// Green, default for success.
   green,
 
-  /// Cyan text — commonly used for progress or step messages.
+  /// Cyan, default for step.
   cyan;
 
-  /// ANSI escape code representing the terminal color for this value.
+  /// ANSI escape code for this color.
   String get color => switch (this) {
     blue => '\x1B[34m',
     yellow => '\x1B[33m',

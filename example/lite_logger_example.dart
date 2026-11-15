@@ -1,15 +1,9 @@
-// For debugging purposes
+// Example prints output by design.
 // ignore_for_file: avoid_print
 
 import 'package:lite_logger/lite_logger.dart';
 
 void main() {
-  // NOTE: `output` defaults to LogOutput.auto: `developer.log()` is preferred
-  // in debug builds (keeps ANSI colors, avoids the `flutter:` logcat escaping
-  // that renders `\x1B[36m` as `^[[36m`), while `print()` is used in release
-  // builds where `developer.log()` is not surfaced. `developer.log()` needs
-  // a debugger/DevTools attached to be visible, so plain `dart run` terminals
-  // show only the explicit `output: LogOutput.print` sections below.
   print('=== Basic Usage (auto output) ===');
   const LiteLogger(name: 'App', minLevel: LogLevel.debug)
     ..info('Application started')
@@ -43,7 +37,7 @@ void main() {
     ..warning('Low disk space')
     ..error('Unable to access database');
 
-  print('\n=== Using print() explicitly (plain terminals) ===');
+  print('\n=== Using print() explicitly ===');
   const LiteLogger(
       name: 'DevLogger',
       minLevel: LogLevel.debug,
@@ -62,9 +56,6 @@ void main() {
     ..info('This uses developer.log()')
     ..warning('Cleaner output for tooling')
     ..error('Explicitly opt out of print()');
-  // NOTE: the default (LogOutput.auto) already prefers developer.log() in
-  // debug builds, so `output: LogOutput.developerLog` is only needed to force
-  // it (e.g. in release builds).
 
   print('\n=== Custom Format with Named Logger ===');
   const LiteLogger(name: 'Custom', format: '@{icon} @{level}: @{message}')
@@ -77,15 +68,12 @@ void main() {
 
   logger.debug(() {
     expensiveCallCount++;
-    // This function is only called if debug level is enabled
     return 'Expensive computation result: '
         '${DateTime.now().millisecondsSinceEpoch}';
   });
   print('Expensive function was called $expensiveCallCount time(s)');
 
-  // With minLevel above debug, the function won't be called
   const LiteLogger(minLevel: LogLevel.warning).debug(() {
-    // This will never execute
     return 'This is expensive and will not run';
   });
 }

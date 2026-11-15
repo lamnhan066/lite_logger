@@ -1,22 +1,23 @@
-/// Represents the severity or importance of a log message.
+/// Severity of a log message, ordered by priority.
+///
+/// Used with `minLevel` to filter: a message logs when
+/// `level.index <= minLevel.index`.
 enum LogLevel {
-  /// Critical failures that require immediate attention and
-  /// typically stop the process.
+  /// Critical failures.
   error,
 
-  /// Recoverable issues that may degrade the application or
-  /// indicate potential problems.
+  /// Recoverable issues.
   warning,
 
-  /// Successful operations indicating that a task completed as expected.
+  /// Successful operations.
   success,
 
-  /// General informational messages about routine operations.
+  /// General information.
   info,
 
-  /// Operational progress updates, often used in multi-step processes.
+  /// Progress in multi-step flows.
   step,
 
-  /// Detailed diagnostic output, usually enabled only during development.
+  /// Diagnostic details for development.
   debug,
 }

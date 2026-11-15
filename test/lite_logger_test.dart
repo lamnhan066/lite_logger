@@ -1,4 +1,4 @@
-import 'dart:async'; // Required for Zone and ZoneSpecification
+import 'dart:async';
 
 import 'package:lite_logger/src/lite_logger.dart';
 import 'package:lite_logger/src/models/log_color.dart';
@@ -6,9 +6,6 @@ import 'package:lite_logger/src/models/log_level.dart';
 import 'package:lite_logger/src/models/log_output.dart';
 import 'package:test/test.dart';
 
-// Utility to capture print output within a test zone.
-// This function creates and returns a new Zone
-// where print statements are intercepted.
 Zone createTestZone(void Function(String s) fn) {
   return Zone.current.fork(
     specification: ZoneSpecification(
@@ -71,8 +68,6 @@ void main() {
     test(
       'should route to developer.log() by default in debug (auto mode)',
       () => testZone.run(() {
-        // In a debug/test VM, the default (LogOutput.auto) prefers
-        // developer.log(), so nothing reaches print().
         const LiteLogger().info('Default auto message');
         expect(capturedPrints, isEmpty);
       }),
@@ -102,8 +97,7 @@ void main() {
     test(
       'should honor deprecated usePrint true (maps to print)',
       () => testZone.run(() {
-        // `usePrint` is deprecated in favor of `output`; these tests guard
-        // backwards compatibility so they intentionally use the old API.
+        // Covers legacy API.
         // ignore: deprecated_member_use
         const LiteLogger(usePrint: true).info('Legacy print message');
         expect(capturedPrints, isNotEmpty);
@@ -114,8 +108,7 @@ void main() {
     test(
       'should honor deprecated usePrint false (maps to developer.log)',
       () => testZone.run(() {
-        // `usePrint` is deprecated in favor of `output`; these tests guard
-        // backwards compatibility so they intentionally use the old API.
+        // Covers legacy API.
         // ignore: deprecated_member_use
         const LiteLogger(usePrint: false).info('Legacy dev log message');
         expect(capturedPrints, isEmpty);
@@ -125,8 +118,7 @@ void main() {
     test(
       'should let explicit usePrint take precedence over output',
       () => testZone.run(() {
-        // `usePrint` is deprecated in favor of `output`; these tests guard
-        // backwards compatibility so they intentionally use the old API.
+        // Covers legacy API.
         // ignore: deprecated_member_use
         const LiteLogger(
           output: LogOutput.developerLog,
@@ -156,8 +148,10 @@ void main() {
     test(
       'should log messages when minLevel is met (equal level)',
       () => testZone.run(() {
-        const LiteLogger(minLevel: LogLevel.warning, output: LogOutput.print)
-            .warning('Warning message');
+        const LiteLogger(
+          minLevel: LogLevel.warning,
+          output: LogOutput.print,
+        ).warning('Warning message');
         expect(capturedPrints, isNotEmpty);
         expect(capturedPrints.first, contains('Warning message'));
       }),
@@ -169,14 +163,13 @@ void main() {
         const LiteLogger(output: LogOutput.print).info('Info message');
         final logOutput = capturedPrints.first;
 
-        // print() output strips ANSI codes (logcat would mangle them).
         expect(logOutput, isNot(contains('\x1B[')));
-        expect(logOutput, contains('💡')); // Info icon
-        expect(logOutput, contains('[INFO]')); // Info level text
-        expect(logOutput, contains('[')); // Timestamp start
-        expect(logOutput, contains(']')); // Timestamp end
+        expect(logOutput, contains('💡'));
+        expect(logOutput, contains('[INFO]'));
+        expect(logOutput, contains('['));
+        expect(logOutput, contains(']'));
         expect(logOutput, contains('Info message'));
-        expect(logOutput, isNot(endsWith('\x1B[0m'))); // No reset code
+        expect(logOutput, isNot(endsWith('\x1B[0m')));
       }),
     );
 
@@ -212,16 +205,14 @@ void main() {
           colors: customColors,
           output: LogOutput.print,
         ).info('Custom color');
-        // print() mode strips ANSI codes.
         expect(capturedPrints.first, isNot(contains('\x1B[')));
 
-        // The colored path (developer.log / callback) still applies them.
         String? coloredMessage;
         LiteLogger(
           colors: customColors,
           callback: (raw, colored, level) => coloredMessage = colored,
         ).info('Custom color');
-        expect(coloredMessage, contains('\x1B[31m')); // Red color
+        expect(coloredMessage, contains('\x1B[31m'));
       }),
     );
 
@@ -242,8 +233,10 @@ void main() {
       'should use custom level text',
       () => testZone.run(() {
         final customLevelText = {LogLevel.info: 'INF'};
-        LiteLogger(levelTexts: customLevelText, output: LogOutput.print)
-            .info('Custom level text');
+        LiteLogger(
+          levelTexts: customLevelText,
+          output: LogOutput.print,
+        ).info('Custom level text');
         final logOutput = capturedPrints.first;
         expect(logOutput, contains('[INF]'));
       }),
@@ -267,7 +260,7 @@ void main() {
         expect(rawMessage, 'Callback test');
         expect(coloredMessage, contains('Callback test'));
         expect(logLevel, LogLevel.info);
-        expect(capturedPrints, isEmpty); // Should not print to console
+        expect(capturedPrints, isEmpty);
       }),
     );
 
@@ -337,7 +330,6 @@ void main() {
       () => testZone.run(() {
         const LiteLogger(output: LogOutput.print).info('Test message');
         final logOutput = capturedPrints.first;
-        // Should not contain a name prefix pattern like [Name]:
         expect(logOutput, isNot(matches(r'\[.*?\]:')));
       }),
     );
@@ -350,7 +342,6 @@ void main() {
           output: LogOutput.print,
         ).info('Info message');
         final logOutput = capturedPrints.first;
-        // print() mode uses a plain `[name]` prefix with no ANSI codes.
         expect(logOutput, contains('[App]'));
         expect(logOutput, isNot(contains('\x1B[')));
         expect(logOutput, contains('Info message'));
@@ -381,14 +372,8 @@ void main() {
         ).info('Test callback');
 
         expect(capturedColored, isNotNull);
-        // The callback receives the colored output, which should include name
-        // when using print (but callback bypasses print, so it won't have name
-        // prefix)
         expect(capturedColored, contains('Test callback'));
-        expect(
-          capturedPrints,
-          isEmpty,
-        ); // Should not print when callback is set
+        expect(capturedPrints, isEmpty);
       }),
     );
 
@@ -416,7 +401,6 @@ void main() {
           output: LogOutput.print,
         ).info('Info message');
         final logOutput = capturedPrints.first;
-        // print() output must be plain text (logcat mangles ESC bytes).
         expect('\x1B['.allMatches(logOutput).length, 0);
         expect(logOutput, contains('[App]'));
         expect(logOutput, isNot(contains('\x1B[0m')));
