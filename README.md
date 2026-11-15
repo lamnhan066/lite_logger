@@ -4,9 +4,8 @@ A lightweight logging utility for Dart & Flutter with colored output, log filter
 
 ## Installation
 
-```yaml
-dependencies:
-  lite_logger: ^0.3.2
+```sh
+dart pub add lite_logger
 ```
 
 ## Features

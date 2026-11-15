@@ -75,6 +75,7 @@ class LiteLogger {
   /// - [enabled] skips all output when false.
   /// - [minLevel] logs levels with `level.index <= minLevel.index`.
   /// - [callback] receives `(raw, colored, level)` instead of printing.
+  ///   `colored` includes the `[name]` prefix when set; `raw` does not.
   /// - [colors], [emojis], [levelTexts], [timestamp], [format] customize
   ///   output.
   /// - [output] selects `print` vs `developer.log`; deprecated [usePrint]
@@ -137,11 +138,11 @@ class LiteLogger {
 
   /// Logs [message] at [level] if enabled and above minLevel.
   ///
-  /// [message] can be a `String` or a `String Function()` for lazy evaluation:
+  /// [message] can be a value or a zero-arg function for lazy evaluation:
   /// ```dart
   /// logger.log(() => expensiveComputation(), LogLevel.debug);
   /// ```
-  void log(dynamic message, [LogLevel level = LogLevel.info]) {
+  void log(Object? message, [LogLevel level = LogLevel.info]) {
     if (!_enabled) return;
     if (!_shouldLog(level)) return;
 
@@ -151,7 +152,7 @@ class LiteLogger {
     final icon = (_emojis[level] ?? _defaultEmojis[level])!;
     final levelText = (_levelText[level] ?? _defaultLevelTexts[level])!;
     final textMessage =
-        message is Function ? '${(message as Function)()}' : '$message';
+        message is Object? Function() ? '${message()}' : '$message';
 
     // Only the emitted variant is built: colored for developer.log/callback,
     // plain (no ANSI codes) for print().
@@ -175,7 +176,12 @@ class LiteLogger {
     );
 
     if (_callback != null) {
-      _callback(textMessage, colored(), level);
+      final coloredMessage = colored();
+      _callback(
+        textMessage,
+        _name.isEmpty ? coloredMessage : '[$_name] $coloredMessage',
+        level,
+      );
     } else {
       if (_effectiveUsePrint) {
         final plained = plain();
@@ -190,22 +196,22 @@ class LiteLogger {
   }
 
   /// Logs at [LogLevel.error].
-  void error(dynamic message) => log(message, LogLevel.error);
+  void error(Object? message) => log(message, LogLevel.error);
 
   /// Logs at [LogLevel.warning].
-  void warning(dynamic message) => log(message, LogLevel.warning);
+  void warning(Object? message) => log(message, LogLevel.warning);
 
   /// Logs at [LogLevel.success].
-  void success(dynamic message) => log(message, LogLevel.success);
+  void success(Object? message) => log(message, LogLevel.success);
 
   /// Logs at [LogLevel.info].
-  void info(dynamic message) => log(message);
+  void info(Object? message) => log(message);
 
   /// Logs at [LogLevel.step].
-  void step(dynamic message) => log(message, LogLevel.step);
+  void step(Object? message) => log(message, LogLevel.step);
 
   /// Logs at [LogLevel.debug].
-  void debug(dynamic message) => log(message, LogLevel.debug);
+  void debug(Object? message) => log(message, LogLevel.debug);
 
   bool _shouldLog(LogLevel level) => level.index <= _minLevel.index;
 }
